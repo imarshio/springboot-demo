@@ -1,0 +1,25 @@
+server:
+  port: 9999
+spring:
+  application:
+    name: demo-mail
+  mail:
+    host: smtp.qiye.aliyun.com
+    username: sre@shenqingtech.com
+    password: sreSQ000
+    port: 465
+    default-encoding: UTF-8
+    jndi-name: mail/Session
+    properties:
+      mail:
+        from: ${spring.mail.username}
+        smtp:
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connection: 5000
+          timeout: 3000
+          writeTimeout: 5000

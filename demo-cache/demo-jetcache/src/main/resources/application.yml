@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: jetcache-demo
+
+jetcache:
+  statIntervalMinutes: 15
+  areaInCacheName: false
+  local:
+    default:
+      type: caffeine
+      keyConvertor: fastjson
+  remote:
+    default:
+      type: redis
+      keyConvertor: fastjson2
+      broadcastChannel: jetcache-demo
+      valueEncoder: java
+      valueDecoder: java
+      poolConfig:
+        minIdle: 5
+        maxIdle: 20
+        maxTotal: 50
+      host: dc.deepq.tech
+      port: 6372
