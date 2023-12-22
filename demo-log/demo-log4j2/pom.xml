@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>demo-log4j</artifactId>
+    <artifactId>demo-log4j2</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -18,19 +18,11 @@
     </properties>
 
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-log4j -->
+        <!-- springboot 自带log4j2 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j</artifactId>
-            <version>1.3.8.RELEASE</version>
+            <artifactId>spring-boot-starter-log4j2</artifactId>
         </dependency>
-        <!-- 最新版，后续已不再更新 -->
-        <!-- &lt;!&ndash; https://mvnrepository.com/artifact/log4j/log4j &ndash;&gt; -->
-        <!-- <dependency> -->
-        <!--     <groupId>log4j</groupId> -->
-        <!--     <artifactId>log4j</artifactId> -->
-        <!--     <version>1.2.17</version> -->
-        <!-- </dependency> -->
     </dependencies>
 
 </project>
