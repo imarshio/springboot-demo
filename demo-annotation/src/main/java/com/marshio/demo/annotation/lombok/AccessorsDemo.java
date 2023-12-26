@@ -1,4 +1,4 @@
-package com.marshio.demo.domain.entity;
+package com.marshio.demo.annotation.lombok;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
  */
 @Data
 @Accessors(chain = true, fluent = true)
-public class DemoEntity {
+public class AccessorsDemo {
 
     private Long id;
     private String name;
