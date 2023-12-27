@@ -28,4 +28,19 @@ public class TransactionController {
     public Object rollback2(Boolean flag) {
         return service.rollback2(flag);
     }
+
+    @GetMapping("/rollback3")
+    public Object rollback3(Boolean flag) throws Exception {
+        return service.rollback3(flag);
+    }
+
+    @GetMapping("/rollback4")
+    public Object rollback4(Boolean flag) throws BusinessException {
+        return service.rollback4(flag);
+    }
+
+    @GetMapping("/propagation")
+    public Object propagation(Boolean flag) {
+        return service.propagation(flag);
+    }
 }

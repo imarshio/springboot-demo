@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class BusinessException extends RuntimeException{
+public class BusinessException extends Exception{
     private String code;
     private String message;
 }
