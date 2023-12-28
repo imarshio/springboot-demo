@@ -1,0 +1,8 @@
+logging:
+  file:
+    max-size: 1MB
+    max-history: 30
+    path: ./logs
+  level:
+    root: info
+    tech.deepq: info

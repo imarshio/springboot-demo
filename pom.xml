@@ -48,6 +48,7 @@
         <spring-boot.version>2.3.8.RELEASE</spring-boot.version>
         <spring-cloud.version>Hoxton.SR10</spring-cloud.version>
         <alibaba.jetcache.version>2.7.3</alibaba.jetcache.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-cloud-alibaba.version>2.2.3.RELEASE</spring-cloud-alibaba.version>
     </properties>
 
@@ -94,4 +95,35 @@
             <artifactId>lombok</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

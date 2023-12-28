@@ -40,22 +40,22 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <!-- https://docs.spring.io/spring-boot/docs/2.3.5.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-annotation-processor -->
-                            <groupId>org.springframework.boot</groupId>
-                            <artifactId>spring-boot-configuration-processor</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <!-- <build> -->
+    <!--     <plugins> -->
+    <!--         <plugin> -->
+    <!--             <groupId>org.springframework.boot</groupId> -->
+    <!--             <artifactId>spring-boot-maven-plugin</artifactId> -->
+    <!--             <configuration> -->
+    <!--                 <excludes> -->
+    <!--                     <exclude> -->
+    <!--                         &lt;!&ndash; https://docs.spring.io/spring-boot/docs/2.3.5.RELEASE/reference/html/appendix-configuration-metadata.html#configuration-metadata-annotation-processor &ndash;&gt; -->
+    <!--                         <groupId>org.springframework.boot</groupId> -->
+    <!--                         <artifactId>spring-boot-configuration-processor</artifactId> -->
+    <!--                     </exclude> -->
+    <!--                 </excludes> -->
+    <!--             </configuration> -->
+    <!--         </plugin> -->
+    <!--     </plugins> -->
+    <!-- </build> -->
 
 </project>
