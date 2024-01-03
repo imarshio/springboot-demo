@@ -12,6 +12,7 @@
     <artifactId>demo-commons-logging</artifactId>
 
     <properties>
+        <log4j.version>1.2.17</log4j.version>
         <log4j2.version>2.8.2</log4j2.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
@@ -32,7 +33,7 @@
         <!-- <dependency> -->
         <!--     <groupId>log4j</groupId> -->
         <!--     <artifactId>log4j</artifactId> -->
-        <!--     <version>1.2.17</version> -->
+        <!--     <version>${log4j.version}</version> -->
         <!-- </dependency> -->
 
 

@@ -6,7 +6,7 @@
 
 ### 日志门面
 
-只提供日志相关的接口定义，不提供具体的实现，日志门面必须配合日志系统使用，日志门面可以动态或静态的指定具体的日志框架实现，使用户可以灵活的选择。
+只提供日志相关的接口定义，不提供具体地实现，日志门面必须配合日志系统使用，日志门面可以动态或静态的指定具体的日志框架实现，使用户可以灵活的选择。
 
 门面日志框架包含：commons logging，slf4j
 
@@ -179,34 +179,35 @@ J.U.L默认会加载logging.properties。
 - 通过系统变量加载配置文件
 
   ```java
-  package com.mkyong;
-  
-  import java.io.IOException;
-  import java.io.InputStream;
-  import java.util.logging.Level;
-  import java.util.logging.LogManager;
-  import java.util.logging.Logger;
-  
-  public class LoadLogPropertiesFile2 {
-  
-    static {
-        // must set before the Logger
-        // loads logging.properties from the classpath
-        String path = LoadLogPropertiesFile.class.getClassLoader().getResource("logging.properties").getFile();
-        System.setProperty("java.util.logging.config.file", path);
-  
-    }
-  
-    private static Logger logger = Logger.getLogger(LoadLogPropertiesFile.class.getName());
-  
-    public static void main(String[] args) {
-  
-        logger.info("This is level info logging");
-  
-    }
-  
+package com.demo;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
+public class LoadLogPropertiesFile2 {
+
+  static {
+      // must set before the Logger
+      // loads logging.properties from the classpath
+      String path = Objects.requireNonNull(LoadLogPropertiesFile.class.getClassLoader().getResource("logging.properties")).getFile();
+      System.setProperty("java.util.logging.config.file", path);
+
   }
-  ```
+
+  private static Logger logger = Logger.getLogger(LoadLogPropertiesFile.class.getName());
+
+  public static void main(String[] args) {
+
+      logger.info("This is level info logging");
+
+  }
+
+}
+```
 
 样例
 
@@ -265,7 +266,7 @@ wiki：https://cwiki.apache.org/confluence/display/commons/Logging
 
 #### Log
 
-接口，日志记录器，会根据具体的实现调用对应的日志记录方式，如配置了Log4j就会根据Log4j的方式去发送日志消息。
+接口，日志记录器，会根据具体地实现调用对应的日志记录方式，如配置了Log4j就会根据Log4j的方式去发送日志消息。
 
 #### LogFactory
 
