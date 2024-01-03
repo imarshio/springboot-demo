@@ -9,9 +9,9 @@ import org.apache.commons.logging.LogFactory;
  * @create 2023-12-29 18:18
  */
 public class JCLApplication {
+    private static final Log log = LogFactory.getLog(JCLApplication.class);
 
     public static void main(String[] args) {
-        Log log = LogFactory.getLog(JCLApplication.class);
 
         log.fatal("fatal");
         log.error("error");

@@ -23,6 +23,7 @@
         <module>demo-api-doc/demo-swagger-v2</module>
         <module>demo-api-doc/demo-swagger-v3</module>
         <module>demo-log/demo-log4j2</module>
+        <module>demo-json</module>
     </modules>
 
     <parent>

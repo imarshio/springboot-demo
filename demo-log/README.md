@@ -152,6 +152,7 @@ J.U.L默认会加载logging.properties。
   import java.util.logging.LogManager;
   import java.util.logging.Logger;
   
+  @SuppressWarnings("all")
   public class LoadLogProperties {
   
     static {
@@ -234,6 +235,21 @@ Java commons logging 简称 J.C.L，
 
 wiki：https://cwiki.apache.org/confluence/display/commons/Logging
 
+其他：
+
+- https://www.logicbig.com/tutorials/misc/java-logging/apache-commons-logging.html
+
+标准发行版中包含的Jars
+
+- commons-logging.jar，有api，有Log及其实现类（除SimpleLog、NoOpLog、Jdk14Logger之外，还包括Log4JLogger，LogKitLogger，Jdk13LumberjackLogger，AvalonLogger），还有LogFactory及其实现类
+- commons-logging-api.jar，有api
+- commons-logging-adapters.jar
+
+你可以认为commons-logging = commons-logging-api + commons-logging-adapters
+
+大多数情况下，你只需要引用`commons-logging.jar`和你想用的日志实现即可，会根据一定的逻辑来找到默认的日志记录器实现,如果没有配置日志实现类，则会默认使用Jdk14Logger。
+
+
 ### 日志级别
 
 - fatal
@@ -247,11 +263,464 @@ wiki：https://cwiki.apache.org/confluence/display/commons/Logging
 
 ### 核心组件
 
+#### Log
 
+接口，日志记录器，会根据具体的实现调用对应的日志记录方式，如配置了Log4j就会根据Log4j的方式去发送日志消息。
+
+#### LogFactory
+
+可以创建Log实例。
 
 ### 配置
 
-JCL默认使用
+JCL找日志记录器实现的过程(discovery process )可以参考如下代码：commons-logging包下LogFactory的实现方法,`org.apache.commons.logging.LogFactory.getFactory`
+
+```java
+@SuppressWarnings("all")
+public abstract class LogFactory {
+    
+    public static LogFactory getFactory() throws LogConfigurationException {
+        // Identify the class loader we will be using
+        ClassLoader contextClassLoader = getContextClassLoaderInternal();
+
+        if (contextClassLoader == null) {
+            // This is an odd enough situation to report about. This
+            // output will be a nuisance on JDK1.1, as the system
+            // classloader is null in that environment.
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic("Context classloader is null.");
+            }
+        }
+
+        // Return any previously registered factory for this class loader
+        LogFactory factory = getCachedFactory(contextClassLoader);
+        if (factory != null) {
+            return factory;
+        }
+
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(
+                    "[LOOKUP] LogFactory implementation requested for the first time for context classloader " +
+                            objectId(contextClassLoader));
+            logHierarchy("[LOOKUP] ", contextClassLoader);
+        }
+
+        // Load properties file.
+        //
+        // If the properties file exists, then its contents are used as
+        // "attributes" on the LogFactory implementation class. One particular
+        // property may also control which LogFactory concrete subclass is
+        // used, but only if other discovery mechanisms fail..
+        //
+        // As the properties file (if it exists) will be used one way or
+        // another in the end we may as well look for it first.
+
+        Properties props = getConfigurationFile(contextClassLoader, FACTORY_PROPERTIES);
+
+        // Determine whether we will be using the thread context class loader to
+        // load logging classes or not by checking the loaded properties file (if any).
+        ClassLoader baseClassLoader = contextClassLoader;
+        if (props != null) {
+            String useTCCLStr = props.getProperty(TCCL_KEY);
+            if (useTCCLStr != null) {
+                // The Boolean.valueOf(useTCCLStr).booleanValue() formulation
+                // is required for Java 1.2 compatibility.
+                if (Boolean.valueOf(useTCCLStr).booleanValue() == false) {
+                    // Don't use current context classloader when locating any
+                    // LogFactory or Log classes, just use the class that loaded
+                    // this abstract class. When this class is deployed in a shared
+                    // classpath of a container, it means webapps cannot deploy their
+                    // own logging implementations. It also means that it is up to the
+                    // implementation whether to load library-specific config files
+                    // from the TCCL or not.
+                    baseClassLoader = thisClassLoader;
+                }
+            }
+        }
+
+        // Determine which concrete LogFactory subclass to use.
+        // First, try a global system property
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic("[LOOKUP] Looking for system property [" + FACTORY_PROPERTY +
+                    "] to define the LogFactory subclass to use...");
+        }
+
+        try {
+            String factoryClass = getSystemProperty(FACTORY_PROPERTY, null);
+            if (factoryClass != null) {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic("[LOOKUP] Creating an instance of LogFactory class '" + factoryClass +
+                            "' as specified by system property " + FACTORY_PROPERTY);
+                }
+                factory = newFactory(factoryClass, baseClassLoader, contextClassLoader);
+            } else {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic("[LOOKUP] No system property [" + FACTORY_PROPERTY + "] defined.");
+                }
+            }
+        } catch (SecurityException e) {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic("[LOOKUP] A security exception occurred while trying to create an" +
+                        " instance of the custom factory class" + ": [" + trim(e.getMessage()) +
+                        "]. Trying alternative implementations...");
+            }
+            // ignore
+        } catch (RuntimeException e) {
+            // This is not consistent with the behaviour when a bad LogFactory class is
+            // specified in a services file.
+            //
+            // One possible exception that can occur here is a ClassCastException when
+            // the specified class wasn't castable to this LogFactory type.
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic("[LOOKUP] An exception occurred while trying to create an" +
+                        " instance of the custom factory class" + ": [" +
+                        trim(e.getMessage()) +
+                        "] as specified by a system property.");
+            }
+            throw e;
+        }
+
+        // Second, try to find a service by using the JDK1.3 class
+        // discovery mechanism, which involves putting a file with the name
+        // of an interface class in the META-INF/services directory, where the
+        // contents of the file is a single line specifying a concrete class
+        // that implements the desired interface.
+
+        if (factory == null) {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic("[LOOKUP] Looking for a resource file of name [" + SERVICE_ID +
+                        "] to define the LogFactory subclass to use...");
+            }
+            try {
+                final InputStream is = getResourceAsStream(contextClassLoader, SERVICE_ID);
+
+                if (is != null) {
+                    // This code is needed by EBCDIC and other strange systems.
+                    // It's a fix for bugs reported in xerces
+                    BufferedReader rd;
+                    try {
+                        rd = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                    } catch (java.io.UnsupportedEncodingException e) {
+                        rd = new BufferedReader(new InputStreamReader(is));
+                    }
+
+                    String factoryClassName = rd.readLine();
+                    rd.close();
+
+                    if (factoryClassName != null && !"".equals(factoryClassName)) {
+                        if (isDiagnosticsEnabled()) {
+                            logDiagnostic("[LOOKUP]  Creating an instance of LogFactory class " +
+                                    factoryClassName +
+                                    " as specified by file '" + SERVICE_ID +
+                                    "' which was present in the path of the context classloader.");
+                        }
+                        factory = newFactory(factoryClassName, baseClassLoader, contextClassLoader);
+                    }
+                } else {
+                    // is == null
+                    if (isDiagnosticsEnabled()) {
+                        logDiagnostic("[LOOKUP] No resource file with name '" + SERVICE_ID + "' found.");
+                    }
+                }
+            } catch (Exception ex) {
+                // note: if the specified LogFactory class wasn't compatible with LogFactory
+                // for some reason, a ClassCastException will be caught here, and attempts will
+                // continue to find a compatible class.
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(
+                            "[LOOKUP] A security exception occurred while trying to create an" +
+                                    " instance of the custom factory class" +
+                                    ": [" + trim(ex.getMessage()) +
+                                    "]. Trying alternative implementations...");
+                }
+                // ignore
+            }
+        }
+
+        // Third try looking into the properties file read earlier (if found)
+
+        if (factory == null) {
+            if (props != null) {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(
+                            "[LOOKUP] Looking in properties file for entry with key '" + FACTORY_PROPERTY +
+                                    "' to define the LogFactory subclass to use...");
+                }
+                String factoryClass = props.getProperty(FACTORY_PROPERTY);
+                if (factoryClass != null) {
+                    if (isDiagnosticsEnabled()) {
+                        logDiagnostic(
+                                "[LOOKUP] Properties file specifies LogFactory subclass '" + factoryClass + "'");
+                    }
+                    factory = newFactory(factoryClass, baseClassLoader, contextClassLoader);
+
+                    // TODO: think about whether we need to handle exceptions from newFactory
+                } else {
+                    if (isDiagnosticsEnabled()) {
+                        logDiagnostic("[LOOKUP] Properties file has no entry specifying LogFactory subclass.");
+                    }
+                }
+            } else {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic("[LOOKUP] No properties file available to determine" + " LogFactory subclass from..");
+                }
+            }
+        }
+
+        // Fourth, try the fallback implementation class
+
+        if (factory == null) {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(
+                        "[LOOKUP] Loading the default LogFactory implementation '" + FACTORY_DEFAULT +
+                                "' via the same classloader that loaded this LogFactory" +
+                                " class (ie not looking in the context classloader).");
+            }
+
+            // Note: unlike the above code which can try to load custom LogFactory
+            // implementations via the TCCL, we don't try to load the default LogFactory
+            // implementation via the context classloader because:
+            // * that can cause problems (see comments in newFactory method)
+            // * no-one should be customising the code of the default class
+            // Yes, we do give up the ability for the child to ship a newer
+            // version of the LogFactoryImpl class and have it used dynamically
+            // by an old LogFactory class in the parent, but that isn't
+            // necessarily a good idea anyway.
+            factory = newFactory(FACTORY_DEFAULT, thisClassLoader, contextClassLoader);
+        }
+
+        if (factory != null) {
+            /**
+             * Always cache using context class loader.
+             */
+            cacheFactory(contextClassLoader, factory);
+
+            if (props != null) {
+                Enumeration names = props.propertyNames();
+                while (names.hasMoreElements()) {
+                    String name = (String) names.nextElement();
+                    String value = props.getProperty(name);
+                    factory.setAttribute(name, value);
+                }
+            }
+        }
+
+        return factory;
+    }
+}
+```
+
+我们也可以通过在resource目录下添加`commons-logging.properties`配置文件来指定使用哪个实现类
+
+```properties
+# 指定使用Jdk14Logger,如果不配置，但是maven引入了log4j一样的效果
+org.apache.commons.logging.Log=org.apache.commons.logging.impl.Jdk14Logger
+
+# 指定使用Log4JLogger，需要引用
+# org.apache.commons.logging.Log=org.apache.commons.logging.impl.Log4JLogger
+```
+
+#### JCL+Log4j 1
+
+##### POM
+
+```xml
+    <dependencies>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>${commons-logging.version}</version>
+        </dependency>
+        <!-- 因为jcl已经存在了Log4j的实现，所以我们不需要任何桥接jar包来解决冲突 -->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+    </dependencies>
+```
+
+##### 应用
+
+```java
+public class JCLApplication {
+    private static final Log log = LogFactory.getLog(JCLApplication.class);
+
+    public static void main(String[] args) {
+
+        log.fatal("fatal");
+        log.error("error");
+        log.warn("warn");
+        log.info("info");
+        log.debug("debug");
+        log.trace("trace");
+    }
+}
+```
+
+##### 配置文件
+
+```properties
+# 日志级别为DEBUG，输出位置为控制台
+log4j.rootLogger=DEBUG,console
+log4j.additivity.org.apache=true
+# 控制台(console)
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.Threshold=DEBUG
+log4j.appender.console.ImmediateFlush=true
+log4j.appender.console.Target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %5p [%t] %l - %m%n
+```
+
+##### 输出
+
+```text
+2024-01-03 16:07:02,236 FATAL [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:16) - fatal
+2024-01-03 16:07:02,240 ERROR [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:17) - error
+2024-01-03 16:07:02,240  WARN [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:18) - warn
+2024-01-03 16:07:02,240  INFO [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:19) - info
+2024-01-03 16:07:02,240 DEBUG [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:20) - debug
+```
+
+#### JCL+Log4j 2
+
+##### POM
+
+```xml
+    <dependencies>
+    
+        <dependency>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+          <version>${commons-logging.version}</version>
+        </dependency>
+      
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-core</artifactId>
+          <version>${log4j2.version}</version>
+        </dependency>
+      
+        <!--
+        因为commons-logging没有给log4j 2做Adapter（即Log的实现类里没有Log4j 2能使用的适配器）
+        所以需要引用log4j 2和commons-logging的桥接jar包：log4j-jcl
+        -->
+        <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-jcl</artifactId>
+          <version>${log4j2.version}</version>
+        </dependency>
+      
+    </dependencies>
+```
+
+##### 应用
+
+```java
+public class JCLApplication {
+    private static final Log log = LogFactory.getLog(JCLApplication.class);
+
+    public static void main(String[] args) {
+
+        log.fatal("fatal");
+        log.error("error");
+        log.warn("warn");
+        log.info("info");
+        log.debug("debug");
+        log.trace("trace");
+    }
+}
+```
+
+##### 配置文件
+
+```properties
+# 日志级别为DEBUG，输出位置为控制台
+log4j.rootLogger=DEBUG,console
+log4j.additivity.org.apache=true
+# 控制台(console)
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.Threshold=DEBUG
+log4j.appender.console.ImmediateFlush=true
+log4j.appender.console.Target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %5p [%t] %l - %m%n
+```
+
+##### 输出
+
+```text
+2024-01-03 16:07:02,236 FATAL [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:16) - fatal
+2024-01-03 16:07:02,240 ERROR [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:17) - error
+2024-01-03 16:07:02,240  WARN [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:18) - warn
+2024-01-03 16:07:02,240  INFO [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:19) - info
+2024-01-03 16:07:02,240 DEBUG [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:20) - debug
+```
+
+#### JCL+Slf4j
+
+
+##### POM
+
+```xml
+<dependencies>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>${commons-logging.version}</version>
+        </dependency>
+        <!-- 因为jcl已经存在了Log4j的实现，所以我们不需要任何桥接jar包来解决冲突 -->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+    </dependencies>
+```
+
+##### 应用
+
+```java
+public class JCLApplication {
+    private static final Log log = LogFactory.getLog(JCLApplication.class);
+
+    public static void main(String[] args) {
+
+        log.fatal("fatal");
+        log.error("error");
+        log.warn("warn");
+        log.info("info");
+        log.debug("debug");
+        log.trace("trace");
+    }
+}
+```
+
+##### 配置文件
+
+```properties
+# 日志级别为DEBUG，输出位置为控制台
+log4j.rootLogger=DEBUG,console
+log4j.additivity.org.apache=true
+# 控制台(console)
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.Threshold=DEBUG
+log4j.appender.console.ImmediateFlush=true
+log4j.appender.console.Target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %5p [%t] %l - %m%n
+```
+
+##### 输出
+
+```text
+2024-01-03 16:07:02,236 FATAL [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:16) - fatal
+2024-01-03 16:07:02,240 ERROR [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:17) - error
+2024-01-03 16:07:02,240  WARN [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:18) - warn
+2024-01-03 16:07:02,240  INFO [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:19) - info
+2024-01-03 16:07:02,240 DEBUG [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:20) - debug
+```
 
 ## Logback
 
