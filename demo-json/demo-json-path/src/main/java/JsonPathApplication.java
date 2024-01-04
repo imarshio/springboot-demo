@@ -90,11 +90,40 @@ public class JsonPathApplication {
         JSONObject schemaJson = new JSONObject(jsonSchema);
         JSONObject contentJson = new JSONObject(jsonContent);
         JSONObject extDataJson = new JSONObject(jsonExtData);
-
+        // 解析json schema
+        processJsonSchema(schemaJson.getJSONObject("properties"), schemaJson.getJSONObject("$defs"));
         // 处理schemaJson下properties节点
         processJson(schemaJson.get("properties"), schemaJson, contentJson, extDataJson);
 
         return schemaJson.toString();
+    }
+
+    private static void processJsonSchema(Object json, JSONObject defs) {
+        // 替换$ref为实体
+        if (json instanceof JSONArray) {
+
+        } else if (json instanceof JSONObject) {
+            JSONObject jo = (JSONObject) json;
+            jo.keySet().forEach(key -> {
+                Object value = jo.get(key);
+                if ("$ref".equals(key)) {
+                    // 获取值
+                    JSONObject replacement = getReplacement(defs, (String) value);
+                    // 把replacement里的key-value逐一放到当前对象
+
+                }
+            });
+        } else {
+            // k-v
+            // if
+        }
+    }
+
+    private static JSONObject getReplacement(JSONObject defs, String value) {
+        // value == #/$defs/analysisContent
+        // defs
+        String key = value.substring(value.lastIndexOf("//"));
+        return defs.getJSONObject(key);
     }
 
     private static void processJson(Object obj, JSONObject schemaJson, JSONObject contentJson, JSONObject extDataJson) {

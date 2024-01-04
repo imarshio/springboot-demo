@@ -12,7 +12,6 @@ public class JCLApplication {
     private static final Log log = LogFactory.getLog(JCLApplication.class);
 
     public static void main(String[] args) {
-
         log.fatal("fatal");
         log.error("error");
         log.warn("warn");

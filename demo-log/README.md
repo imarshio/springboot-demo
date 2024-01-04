@@ -24,6 +24,8 @@
 
 - 参考：https://zhuanlan.zhihu.com/p/365154773
 
+- 参考：https://whatsrtos.github.io/Java/JavaEE-Log/
+
 ## 演进
 
 https://www.yuque.com/u21559410/xqh5kz/tcevtc7ulef4tnzb?inner=enOcZ
@@ -80,17 +82,45 @@ Log4j是一种日志记录的实现。
 
 ### 核心组件
 
-Log4j有三个核心组件
+Log4j有三个核心组件，引用官方文档：`Log4j has three main components: loggers, appenders and layouts. These three types of components work together to enable developers to log messages according to message type and level, and to control at runtime how these messages are formatted and where they are reported. `
 
--
-loggers，负责发送日志打印请求并决定该请求是否生效，负责定义每一个日志请求的日志级别，负责定义全局日志可输出级别，负责接受输出日志的内容（从程序获取的部分，如`log.info("this is an info level log.");`
+#### loggers
+
+负责发送日志打印请求并决定该请求是否生效，负责定义每一个日志请求的日志级别，负责定义全局日志可输出级别，负责接受输出日志的内容（从程序获取的部分，如`log.info("this is an info level log.");`
 中的`this is an info level log.`）
 
-- appenders，负责决定日志的输出目的，如`console`，`.log`文件等，也支持异步，一个logger可以对应多个appenders，一个请求会被所有的appenders处理
+#### appenders
 
-- layouts，负责定义输出格式
+负责决定日志的输出目的，如`console`，`.log`文件等，也支持异步，一个logger可以对应多个appenders，一个请求会被所有的appenders处理
 
-引用官方文档：`Log4j has three main components: loggers, appenders and layouts. These three types of components work together to enable developers to log messages according to message type and level, and to control at runtime how these messages are formatted and where they are reported. `
+#### layouts
+
+负责定义输出格式
+
+### 配置
+
+```properties
+log4j.rootLogger=INFO,A1               // 定义logger方式1: 定义根logger名=rootLogger, level=INFO, 使用名为A1的appender
+log4j.logger.loggerName1=DEBUG,A2      // 定义logger方式2: logger名=loggerName1, 使用名为A2的appender
+log4j.logger.org.apache = DEBUG, A3    // 定义logger方式3: 对org.apache下的类有效, 使用名为A3的appender
+
+// 定义A1 appender的属性\
+// 可选ConsoleAppender, RollingFileAppender ..
+log4j.appender.A1=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.A1.BufferedIO=false
+log4j.appender.A1.BufferSize=1024
+log4j.appender.A1.file=../logs/api.log // 日志文件位置
+log4j.appender.A1.DatePattern='.'yyyyMMddHH
+log4j.appender.A1.layout=org.apache.log4j.PatternLayout
+log4j.appender.A1.layout.ConversionPattern=%-d{yyyy-MM-dd HH\:mm\:ss SSS} [%p] %m%n // 日志格式
+```
+
+
+
+### 性能
+
+
+
 
 ---
 
@@ -179,37 +209,37 @@ J.U.L默认会加载logging.properties。
 - 通过系统变量加载配置文件
 
   ```java
-package com.demo;
+    package com.demo;
+    
+    import java.io.IOException;
+    import java.io.InputStream;
+    import java.util.Objects;
+    import java.util.logging.Level;
+    import java.util.logging.LogManager;
+    import java.util.logging.Logger;
+    
+    public class LoadLogPropertiesFile2 {
+    
+      static {
+          // must set before the Logger
+          // loads logging.properties from the classpath
+          String path = Objects.requireNonNull(LoadLogPropertiesFile.class.getClassLoader().getResource("logging.properties")).getFile();
+          System.setProperty("java.util.logging.config.file", path);
+    
+      }
+    
+      private static Logger logger = Logger.getLogger(LoadLogPropertiesFile.class.getName());
+    
+      public static void main(String[] args) {
+    
+          logger.info("This is level info logging");
+    
+      }
+    
+    }
+  ```
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
-
-public class LoadLogPropertiesFile2 {
-
-  static {
-      // must set before the Logger
-      // loads logging.properties from the classpath
-      String path = Objects.requireNonNull(LoadLogPropertiesFile.class.getClassLoader().getResource("logging.properties")).getFile();
-      System.setProperty("java.util.logging.config.file", path);
-
-  }
-
-  private static Logger logger = Logger.getLogger(LoadLogPropertiesFile.class.getName());
-
-  public static void main(String[] args) {
-
-      logger.info("This is level info logging");
-
-  }
-
-}
-```
-
-样例
+配置文件样例
 
 ```properties
 # Logs to file and console
@@ -637,26 +667,35 @@ public class JCLApplication {
 ##### 配置文件
 
 ```properties
-# 日志级别为DEBUG，输出位置为控制台
-log4j.rootLogger=DEBUG,console
-log4j.additivity.org.apache=true
-# 控制台(console)
-log4j.appender.console=org.apache.log4j.ConsoleAppender
-log4j.appender.console.Threshold=DEBUG
-log4j.appender.console.ImmediateFlush=true
-log4j.appender.console.Target=System.err
-log4j.appender.console.layout=org.apache.log4j.PatternLayout
-log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %5p [%t] %l - %m%n
+# log4j2.properties
+
+# Set to debug or trace if log4j initialization is failing
+status = warn
+
+# Name of the configuration
+name = ConsoleLogConfigDemo
+
+# Console appender configuration
+appender.console.type = Console
+appender.console.name = consoleLogger
+appender.console.layout.type = PatternLayout
+appender.console.layout.pattern = %d{yyyy-MM-dd HH:mm:ss,SSS} %5p [%t] %l - %m%n
+
+# Root logger level
+rootLogger.level = debug
+
+# Root logger referring to console appender
+rootLogger.appenderRef.stdout.ref = consoleLogger
 ```
 
 ##### 输出
 
 ```text
-2024-01-03 16:07:02,236 FATAL [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:16) - fatal
-2024-01-03 16:07:02,240 ERROR [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:17) - error
-2024-01-03 16:07:02,240  WARN [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:18) - warn
-2024-01-03 16:07:02,240  INFO [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:19) - info
-2024-01-03 16:07:02,240 DEBUG [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:20) - debug
+2024-01-04 13:43:44,163 FATAL [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:16) - fatal
+2024-01-04 13:43:44,164 ERROR [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:17) - error
+2024-01-04 13:43:44,164  WARN [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:18) - warn
+2024-01-04 13:43:44,164  INFO [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:19) - info
+2024-01-04 13:43:44,164 DEBUG [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:20) - debug
 ```
 
 #### JCL+Slf4j
@@ -723,21 +762,78 @@ log4j.appender.console.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %5p 
 2024-01-03 16:07:02,240 DEBUG [main] com.marshio.demo.log.JCLApplication.main(JCLApplication.java:20) - debug
 ```
 
-## Logback
-
-### 日志级别
-
-### 核心组件
-
-### 配置
-
 ## SLF4J
 
+官网：https://www.slf4j.org/
+
+用户手册：https://www.slf4j.org/manual.html
+
+Simple Log Facade for Java(SLF4J). 日志门面。
+
+> The Simple Logging Facade for Java (SLF4J) serves as a simple facade or abstraction for various logging frameworks, such as java.util.logging, log4j 1.x, reload4j and logback. SLF4J allows the end-user to plug in the desired logging framework at deployment time. Note that SLF4J-enabling your library/application implies the addition of only a single mandatory dependency, namely slf4j-api-2.0.10.jar.
+
+
+
+自2.0版本之后，就需要Java8
+
+### 日志级别
+
+- ERROR
+- WARN
+- INFO
+- DEBUG
+- TRACE
+
+### 核心组件
+
+
+
+### 配置
+
+#### POM
+
+```xml
+    <dependencies>
+        <!-- 日志接口 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+		<!-- 包含简单的日志实现 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+        </dependency>
+    </dependencies>
+```
+
+#### 使用
+
+```java
+public class SLF4JApplication {
+
+    public static void main(String[] args) {
+        Logger logger = LoggerFactory.getLogger(SLF4JApplication.class);
+        logger.info("Hello World");
+    }
+}
+```
+
+
+
+
+
+## Logback
+
+官网：https://logback.qos.ch/
+
 ### 日志级别
 
 ### 核心组件
 
 ### 配置
+
+
 
 ## Log4j2
 
