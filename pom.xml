@@ -8,8 +8,6 @@
         <module>demo-postgres</module>
         <module>demo-kafka-stream</module>
         <module>demo-mail</module>
-        <module>demo-aop</module>
-        <module>demo-ioc</module>
         <module>demo-annotation</module>
         <module>demo-log</module>
         <module>demo-orm</module>
@@ -24,6 +22,10 @@
         <module>demo-api-doc/demo-swagger-v3</module>
         <module>demo-log/demo-log4j2</module>
         <module>demo-json</module>
+        <module>demo-spring-framework</module>
+        <module>demo-spring-framework/demo-aop</module>
+        <module>demo-spring-framework/demo-ioc</module>
+        <module>demo-spring-framework/demo-spel</module>
     </modules>
 
     <parent>
