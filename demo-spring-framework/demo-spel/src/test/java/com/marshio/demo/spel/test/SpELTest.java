@@ -32,6 +32,15 @@ public class SpELTest {
         System.out.println(parser.parseExpression("#str").getValue(context));
         System.out.println(parser.parseExpression("#intel").getValue(context));
 
+        // 数组类型
+        String[] arr = new String[]{"1", "2", "3", "  "};
+        context.setVariable("arr", arr);
+        System.out.println(parser.parseExpression("#arr").getValue(context));
+        // 过滤掉空值和长度小于0的数组
+        System.out.println(Arrays.toString((String[]) parser.parseExpression("#arr.?[!empty and length()>0]").getValue(context)));
+        // 过滤掉空值和去掉头尾空格后长度小于0的数组
+        System.out.println(Arrays.toString((String[]) parser.parseExpression("#arr.?[!empty and trim().length()>0]").getValue(context)));
+
         // 字典类型
         Map<String, Object> map = new HashMap<>();
         map.put("data", "<p>2021年11月，据《证券时报》报道，中国证监会发布《关于推动提高上市公司质量的意见》，旨在提升A股市场板块质量。</p>");
@@ -43,7 +52,7 @@ public class SpELTest {
         System.out.println(parser.parseExpression("#map['code']").getValue(context));
         System.out.println(parser.parseExpression("#map['msg']").getValue(context));
 
-        // 数组类型
+        // 集合类型
         List<String> list = new ArrayList<>(2);
         list.add("111");
         list.add("test SpEL");
