@@ -97,4 +97,19 @@ public class SpELTest {
 
         // 当然上面的用法中具体的对象都可以用Object代替，只要你确定你的表达式能正常处理即可
     }
+
+    @Test
+    public void test03() {
+        EvaluationContext context = new StandardEvaluationContext();
+        Map<String, Object> map = new HashMap<>();
+        map.put("data", "国产游戏公司在移动游戏研发、运营上有先发优势，随着海外市场移动化趋势，以及细分品类和长尾地区渗透率提升，游戏出海有望成为重要业绩增量。\n中信证券认为，全球供应链问题与疫情反复导致市场波动，应保持投资组合多样化以应对风险。\n中信证券认为，行业景气度提升，部分企业有望受益。");
+        map.put("code", 200);
+        map.put("msg", "success");
+        context.setVariable("map", map);
+        // var value = parser.parseExpression("(#map['data'].split('\\n')).?[!empty and trim().length()>0].![split('认为，')].?[length == 2].![{'orgName':[0],'summary':[1]}]").getValue(context);
+        // var value = parser.parseExpression("((((#map['data'].split('\\n')).?[!empty and trim().length()>0]).![split('认为，')]).?[length == 2]).![{'orgName':[0],'summary':[1]}]").getValue(context);
+        var value = parser.parseExpression("i = 1;#i").getValue(context);
+        assert value != null;
+        System.out.println(value);
+    }
 }

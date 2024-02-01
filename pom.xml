@@ -11,21 +11,9 @@
         <module>demo-annotation</module>
         <module>demo-log</module>
         <module>demo-orm</module>
-        <module>demo-orm/demo-mybatis</module>
-        <module>demo-orm/demo-mybatis-plus</module>
-        <module>demo-orm/demo-beetlsql</module>
-        <module>demo-log/demo-log4j</module>
-        <module>demo-log/demo-logback</module>
         <module>demo-api-doc</module>
-        <module>demo-api-doc/demo-swagger-v1</module>
-        <module>demo-api-doc/demo-swagger-v2</module>
-        <module>demo-api-doc/demo-swagger-v3</module>
-        <module>demo-log/demo-log4j2</module>
         <module>demo-json</module>
         <module>demo-spring-framework</module>
-        <module>demo-spring-framework/demo-aop</module>
-        <module>demo-spring-framework/demo-ioc</module>
-        <module>demo-spring-framework/demo-spel</module>
     </modules>
 
     <parent>

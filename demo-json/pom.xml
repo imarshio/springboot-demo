@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>demo-json-path</module>
+        <module>demo-json-schema</module>
     </modules>
 
     <properties>

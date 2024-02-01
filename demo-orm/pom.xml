@@ -9,6 +9,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <modules>
+        <module>demo-beetlsql</module>
+        <module>demo-mybatis</module>
+        <module>demo-mybatis-plus</module>
+    </modules>
+
+    <packaging>pom</packaging>
     <artifactId>demo-orm</artifactId>
 
     <properties>

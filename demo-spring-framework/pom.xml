@@ -12,6 +12,12 @@
     <artifactId>demo-spring-framework</artifactId>
     <packaging>pom</packaging>
 
+    <modules>
+        <module>demo-spel</module>
+        <module>demo-aop</module>
+        <module>demo-ioc</module>
+    </modules>
+
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
