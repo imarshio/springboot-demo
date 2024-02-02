@@ -16,6 +16,7 @@
         <module>demo-spel</module>
         <module>demo-aop</module>
         <module>demo-ioc</module>
+        <module>demo-boot-process</module>
     </modules>
 
     <properties>

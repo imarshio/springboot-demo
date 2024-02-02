@@ -1,4 +1,4 @@
-package com.marshio.demo.annotation.java;
+package com.marshio.demo.annotation.java.lang;
 
 @SuppressWarnings(SuppressWarningsName.UNUSED)
 public class SuppressWarningsName {

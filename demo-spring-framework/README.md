@@ -1,5 +1,89 @@
 # Spring Framework
 
+## Spring启动间都发生了什么？
+
+https://docs.spring.io/spring-framework/docs/3.0.x/reference/overview.html
+
+接下来我们跟踪源码进入Spring的启动过程，看看Spring启动时都发生了什么？
+
+```java
+// 首先，我们从SpringApplication类开始，SpringApplication类是SpringBoot的入口点，SpringBoot启动时，会调用SpringApplication.run方法
+// SpringApplication.run方法会调用SpringApplication.run方法，SpringApplication.run方法会调用SpringApplication.run方法，SpringApplication.run方法会调用SpringApplication.run方法，SpringApplication.run方法会调用SpringApplication()
+@SpringBootApplication
+public class BootProcessApplication {
+
+    public static void main(String[] args) {
+        // 1.1启动入口
+        SpringApplication.run(BootProcessApplication.class, args);
+    }
+}
+```
+
+```java
+public static ConfigurableApplicationContext run(Class<?> primarySource, String... args) {
+    // 1.2调用SpringApplication.run方法
+    return run(new Class[]{primarySource}, args);
+}
+
+public static ConfigurableApplicationContext run(Class<?>[] primarySources, String[] args) {
+    // 1.3调用SpringApplication.run方法
+    return (new SpringApplication(primarySources)).run(args);
+}
+
+// 1.4调用SpringApplication.run方法，这个方法可以让我们看到Spring启动期间大致做了什么事
+public ConfigurableApplicationContext run(String... args) {
+    // 定义全局的计时器
+    StopWatch stopWatch = new StopWatch();
+    // 开始计时
+    stopWatch.start();
+    // 定义Spring应用上下文的变量
+    ConfigurableApplicationContext context = null;
+    // 定义SpringBoot异常报告栈
+    Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList();
+    // 1.5 
+    this.configureHeadlessProperty();
+    SpringApplicationRunListeners listeners = this.getRunListeners(args);
+    listeners.starting();
+
+    Collection exceptionReporters;
+    try {
+        ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
+        ConfigurableEnvironment environment = this.prepareEnvironment(listeners, applicationArguments);
+        this.configureIgnoreBeanInfo(environment);
+        Banner printedBanner = this.printBanner(environment);
+        context = this.createApplicationContext();
+        exceptionReporters = this.getSpringFactoriesInstances(SpringBootExceptionReporter.class, new Class[]{ConfigurableApplicationContext.class}, context);
+        this.prepareContext(context, environment, listeners, applicationArguments, printedBanner);
+        this.refreshContext(context);
+        this.afterRefresh(context, applicationArguments);
+        stopWatch.stop();
+        if (this.logStartupInfo) {
+            (new StartupInfoLogger(this.mainApplicationClass)).logStarted(this.getApplicationLog(), stopWatch);
+        }
+
+        listeners.started(context);
+        this.callRunners(context, applicationArguments);
+    } catch (Throwable var10) {
+        this.handleRunFailure(context, var10, exceptionReporters, listeners);
+        throw new IllegalStateException(var10);
+    }
+
+    try {
+        listeners.running(context);
+        return context;
+    } catch (Throwable var9) {
+        this.handleRunFailure(context, var9, exceptionReporters, (SpringApplicationRunListeners)null);
+        throw new IllegalStateException(var9);
+    }
+}
+
+private void configureHeadlessProperty() {
+    System.setProperty("java.awt.headless", System.getProperty("java.awt.headless", Boolean.toString(this.headless)));
+}
+```
+
+
+
 ## AOP
 
 https://docs.spring.io/spring-framework/docs/3.0.x/reference/aop.html
