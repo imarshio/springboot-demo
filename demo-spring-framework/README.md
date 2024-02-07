@@ -6,6 +6,8 @@ https://docs.spring.io/spring-framework/docs/3.0.x/reference/overview.html
 
 接下来我们跟踪源码进入Spring的启动过程，看看Spring启动时都发生了什么？
 
+### 1.1 入口
+
 ```java
 // 首先，我们从SpringApplication类开始，SpringApplication类是SpringBoot的入口点，SpringBoot启动时，会调用SpringApplication.run方法
 // SpringApplication.run方法会调用SpringApplication.run方法，SpringApplication.run方法会调用SpringApplication.run方法，SpringApplication.run方法会调用SpringApplication.run方法，SpringApplication.run方法会调用SpringApplication()
@@ -19,18 +21,20 @@ public class BootProcessApplication {
 }
 ```
 
+### 1.2 调用SpringApplication.run方法
+
 ```java
 public static ConfigurableApplicationContext run(Class<?> primarySource, String... args) {
-    // 1.2调用SpringApplication.run方法
+    // 调用SpringApplication.run方法
     return run(new Class[]{primarySource}, args);
 }
 
 public static ConfigurableApplicationContext run(Class<?>[] primarySources, String[] args) {
-    // 1.3调用SpringApplication.run方法
+    // 调用SpringApplication.run方法
     return (new SpringApplication(primarySources)).run(args);
 }
 
-// 1.4调用SpringApplication.run方法，这个方法可以让我们看到Spring启动期间大致做了什么事
+// 调用SpringApplication.run方法，这个方法可以让我们看到Spring启动期间大致做了什么事
 public ConfigurableApplicationContext run(String... args) {
     // 定义全局的计时器
     StopWatch stopWatch = new StopWatch();
@@ -40,21 +44,29 @@ public ConfigurableApplicationContext run(String... args) {
     ConfigurableApplicationContext context = null;
     // 定义SpringBoot异常报告栈
     Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList();
-    // 1.5 
+    // 1.3 配置headless mode，详情可以参考下面的注释
     this.configureHeadlessProperty();
+    // 1.4 获取SpringBoot监听器并启动监听器
     SpringApplicationRunListeners listeners = this.getRunListeners(args);
     listeners.starting();
 
     Collection exceptionReporters;
     try {
+        // 获取SpringBoot启动参数： []
         ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
+        // 1.5 准备SpringBoot环境变量
         ConfigurableEnvironment environment = this.prepareEnvironment(listeners, applicationArguments);
         this.configureIgnoreBeanInfo(environment);
+        // 打印SpringBoot启动banner
         Banner printedBanner = this.printBanner(environment);
+        // 1.6 创建Spring应用上下文
         context = this.createApplicationContext();
         exceptionReporters = this.getSpringFactoriesInstances(SpringBootExceptionReporter.class, new Class[]{ConfigurableApplicationContext.class}, context);
+        // 2.1 准备SpringBoot上下文
         this.prepareContext(context, environment, listeners, applicationArguments, printedBanner);
+        // 3.1 刷新SpringBoot上下文
         this.refreshContext(context);
+        // 4.1 运行SpringBoot上下文
         this.afterRefresh(context, applicationArguments);
         stopWatch.stop();
         if (this.logStartupInfo) {
@@ -72,17 +84,247 @@ public ConfigurableApplicationContext run(String... args) {
         listeners.running(context);
         return context;
     } catch (Throwable var9) {
-        this.handleRunFailure(context, var9, exceptionReporters, (SpringApplicationRunListeners)null);
+        this.handleRunFailure(context, var9, exceptionReporters, (SpringApplicationRunListeners) null);
         throw new IllegalStateException(var9);
     }
 }
 
+```
+
+### 1.3 配置headless mode
+
+```java
+// 1.3 配置headless mode
 private void configureHeadlessProperty() {
+    // 结合上下文，可以知道，这里是给java.awt.headless设置默认值（根据上下文可知）：true
+    // java.awt.headless参数的意义是：在没有显示器的、键盘、鼠标等设备的情况下，程序可以运行
+    // 可以通过：System.setProperty("java.awt.headless", "true"); 或者添加启动参数：java -Djava.awt.headless=true
+    // Headless mode is a system configuration in which the display device, keyboard, or mouse is lacking. 
+    // Sounds unexpected, but actually you can perform different operations in this mode, even with graphic data.
     System.setProperty("java.awt.headless", System.getProperty("java.awt.headless", Boolean.toString(this.headless)));
 }
 ```
 
+### 1.4 获取SpringBoot监听器并启动监听器
 
+```java
+// 1.4 获取SpringBoot启动监听器
+private SpringApplicationRunListeners getRunListeners(String[] args) {
+    Class<?>[] types = new Class<?>[]{SpringApplication.class, String[].class};
+    // 1.4.1 定义SpringBoot启动监听器
+    return new SpringApplicationRunListeners(logger,
+            // SpringApplicationRunListener,跟踪源码可以看到，这个接口的实现为EventPublishingRunListener
+            getSpringFactoriesInstances(SpringApplicationRunListener.class, types, this, args));
+}
+
+// 1.4.2 获取Spring工厂实例
+private <T> Collection<T> getSpringFactoriesInstances(Class<T> type, Class<?>[] parameterTypes, Object... args) {
+    // 这里获取到的classLoader是AppClassLoader
+    ClassLoader classLoader = getClassLoader();
+    // Use names and ensure unique to protect against duplicates
+    Set<String> names = new LinkedHashSet<>(SpringFactoriesLoader.loadFactoryNames(type, classLoader));
+    List<T> instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);
+
+    AnnotationAwareOrderComparator.sort(instances);
+    return instances;
+}
+
+/**
+ *
+ * @param type SpringApplicationRunListener
+ * @param parameterTypes SpringApplication.class, String[].class
+ * @param classLoader AppClassLoader
+ * @param args []
+ * @param names class的完整类名
+ * @return List<T>
+ * @param <T> 类
+ */
+private <T> List<T> createSpringFactoriesInstances(Class<T> type, Class<?>[] parameterTypes,
+                                                   ClassLoader classLoader, Object[] args, Set<String> names) {
+    List<T> instances = new ArrayList<>(names.size());
+    // 1.4.2.1 遍历SpringBoot启动监听器
+    for (String name : names) {
+        try {
+            Class<?> instanceClass = ClassUtils.forName(name, classLoader);
+            Assert.isAssignable(type, instanceClass);
+            Constructor<?> constructor = instanceClass.getDeclaredConstructor(parameterTypes);
+            // 熟悉的代码，同样的反射构造
+            T instance = (T) BeanUtils.instantiateClass(constructor, args);
+            instances.add(instance);
+        } catch (Throwable ex) {
+            throw new IllegalArgumentException("Cannot instantiate " + type + " : " + name, ex);
+        }
+    }
+    return instances;
+}
+
+// 1.4.3 初始化SpringBoot启动监听器
+class SpringApplicationRunListeners {
+    // 注意这里两个类是不一样的，不是递归调用哦
+	void starting() {
+        // 区别SpringApplicationRunListeners：SpringApplicationRunListener，可以这么理解，
+        // SpringApplicationRunListeners是SpringApplicationRunListener的集合（代理）
+ 		for (SpringApplicationRunListener listener : this.listeners) {
+			listener.starting();
+		}
+	}
+}
+
+public interface SpringApplicationRunListener {
+    default void starting() {
+	}
+}
+
+public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
+    
+	@Override
+	public void starting() {
+        // 广播一个新的事件：new ApplicationStartingEvent(this.application, this.args)，表示SpringBoot应用正在启动
+		this.initialMulticaster.multicastEvent(new ApplicationStartingEvent(this.application, this.args));
+	}    
+}
+```
+
+
+有关监听器这里还有一些细节，其方法的具体意义跟其方法命名一致，即字面意思。
+
+```java
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.io.support.SpringFactoriesLoader;
+
+@SuppressWarnings("all")
+public interface SpringApplicationRunListener {
+
+	/**
+	 * Called immediately when the run method has first started. Can be used for very
+	 * early initialization.
+     * 
+     * 翻译过来就是：在应用启动的时候调用，用于最开始的初始化
+	 */
+	default void starting() {
+	}
+
+	/**
+	 * Called once the environment has been prepared, but before the
+	 * {@link ApplicationContext} has been created.
+	 * @param environment the environment
+	 */
+	default void environmentPrepared(ConfigurableEnvironment environment) {
+	}
+
+	/**
+	 * Called once the {@link ApplicationContext} has been created and prepared, but
+	 * before sources have been loaded.
+	 * @param context the application context
+	 */
+	default void contextPrepared(ConfigurableApplicationContext context) {
+	}
+
+	/**
+	 * Called once the application context has been loaded but before it has been
+	 * refreshed.
+	 * @param context the application context
+	 */
+	default void contextLoaded(ConfigurableApplicationContext context) {
+	}
+
+	/**
+	 * The context has been refreshed and the application has started but
+	 * {@link CommandLineRunner CommandLineRunners} and {@link ApplicationRunner
+	 * ApplicationRunners} have not been called.
+	 * @param context the application context.
+	 * @since 2.0.0
+	 */
+	default void started(ConfigurableApplicationContext context) {
+	}
+
+	/**
+	 * Called immediately before the run method finishes, when the application context has
+	 * been refreshed and all {@link CommandLineRunner CommandLineRunners} and
+	 * {@link ApplicationRunner ApplicationRunners} have been called.
+	 * @param context the application context.
+	 * @since 2.0.0
+	 */
+	default void running(ConfigurableApplicationContext context) {
+	}
+
+	/**
+	 * Called when a failure occurs when running the application.
+	 * @param context the application context or {@code null} if a failure occurred before
+	 * the context was created
+	 * @param exception the failure
+	 * @since 2.0.0
+	 */
+	default void failed(ConfigurableApplicationContext context, Throwable exception) {
+	}
+
+}
+```
+
+### 1.5 准备SpringBoot环境变量
+
+```java
+private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners,
+        ApplicationArguments applicationArguments) {
+    // Create and configure the environment
+    ConfigurableEnvironment environment = getOrCreateEnvironment();
+    configureEnvironment(environment, applicationArguments.getSourceArgs());
+    ConfigurationPropertySources.attach(environment);
+    // 监听器进入环境准备阶段
+    listeners.environmentPrepared(environment);
+    bindToSpringApplication(environment);
+    if (!this.isCustomEnvironment) {
+        environment = new EnvironmentConverter(getClassLoader()).convertEnvironmentIfNecessary(environment,
+                deduceEnvironmentClass());
+    }
+    ConfigurationPropertySources.attach(environment);
+    return environment;
+}
+```
+
+### 1.6 创建Spring应用上下文
+
+```java
+
+// 上下文变量，初始化为null
+private Class<? extends ConfigurableApplicationContext> applicationContextClass;
+
+// 1.10 创建Spring应用上下文
+@SuppressWarnings("all")
+protected ConfigurableApplicationContext createApplicationContext() {
+    Class<?> contextClass = this.applicationContextClass;
+    // 初次创建时applicationContextClass为null
+    if (contextClass == null) {
+        try {
+            // 启动时，因为带了spring-boot-starter-web依赖，所以在启动时，webApplicationType为SERVLET
+            switch (this.webApplicationType) {
+                case SERVLET:
+                    contextClass = Class.forName(DEFAULT_SERVLET_WEB_CONTEXT_CLASS);
+                    break;
+                case REACTIVE:
+                    contextClass = Class.forName(DEFAULT_REACTIVE_WEB_CONTEXT_CLASS);
+                    break;
+                default:
+                    contextClass = Class.forName(DEFAULT_CONTEXT_CLASS);
+            }
+        } catch (ClassNotFoundException ex) {
+            throw new IllegalStateException(
+                    "Unable create a default ApplicationContext, please specify an ApplicationContextClass", ex);
+        }
+    }
+    // 实例化上下文，通过反射去调用方法的构造方法进行实例化
+    return (ConfigurableApplicationContext) BeanUtils.instantiateClass(contextClass);
+}
+```
+
+> TIPS : BeanUtils.instantiateClass()，是一个很不错的Spring专用的工具类
+
+
+参考
+
+- [Headless配置]https://www.oracle.com/technical-resources/articles/javase/headless.html
 
 ## AOP
 
@@ -140,7 +382,10 @@ SpEL表达式的结构丰富多样，可以执行以下操作：
 ### 常见的表达式引擎
 
 - MVEL (MVFLEX Expression Language)：是一个独立的开源项目，它提供了一个轻量级且功能丰富的运行时表达式引擎，可在Java应用中进行复杂的表达式求值。
-- Aviator是一个高性能、轻量级的Java表达式求值引擎，它允许在Java应用中进行简单的数学和逻辑表达式的计算，尤其适合于动态生成或处理SQL查询语句等场景。https://github.com/killme2008/aviatorscript
+-
+
+Aviator是一个高性能、轻量级的Java表达式求值引擎，它允许在Java应用中进行简单的数学和逻辑表达式的计算，尤其适合于动态生成或处理SQL查询语句等场景。https://github.com/killme2008/aviatorscript
+
 - OGNL (Object-Graph Navigation Language)：主要用于Apache Struts框架和一些其他Java库，用于获取和设置Java对象的属性以及调用方法。
 - JEXL (Java Expression Language)：来自Apache Commons项目，也是一个轻量级的、可嵌入的表达式语言，能够执行简单的到较为复杂的表达式。
 - JavaScript scripting in Java：通过javax.script包（即JSR 223: Scripting for the Java
