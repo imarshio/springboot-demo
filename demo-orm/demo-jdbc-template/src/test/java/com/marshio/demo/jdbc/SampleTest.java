@@ -69,6 +69,7 @@ public class SampleTest {
         List<Map<String, Object>> result =  jdbcTemplate.queryForList(sql);
         result.forEach(System.out::println);
         // revert commit test 01 commit
+        // revert commit test 02 commit
     }
 
     private static JdbcTemplate getJdbcTemplate() {
