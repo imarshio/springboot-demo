@@ -6,7 +6,7 @@ https://docs.spring.io/spring-framework/docs/3.0.x/reference/overview.html
 
 接下来我们跟踪源码进入Spring的启动过程，看看Spring启动时都发生了什么？
 
-### 1.1 入口
+## 1.1 入口
 
 ```java
 // 首先，我们从SpringApplication类开始，SpringApplication类是SpringBoot的入口点，SpringBoot启动时，会调用SpringApplication.run方法
@@ -30,8 +30,19 @@ public static ConfigurableApplicationContext run(Class<?> primarySource, String.
 }
 
 public static ConfigurableApplicationContext run(Class<?>[] primarySources, String[] args) {
-    // 调用SpringApplication.run方法
+    // 调用SpringApplication.run方法,声明一个SpringApplication对象，对对象的属性进行初始化
     return (new SpringApplication(primarySources)).run(args);
+}
+
+public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
+    this.resourceLoader = resourceLoader;
+    Assert.notNull(primarySources, "PrimarySources must not be null");
+    this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
+    // 获取应用类型
+    this.webApplicationType = WebApplicationType.deduceFromClasspath();
+    setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+    setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+    this.mainApplicationClass = deduceMainApplicationClass();
 }
 
 // 调用SpringApplication.run方法，这个方法可以让我们看到Spring启动期间大致做了什么事
@@ -62,11 +73,11 @@ public ConfigurableApplicationContext run(String... args) {
         // 1.6 创建Spring应用上下文
         context = this.createApplicationContext();
         exceptionReporters = this.getSpringFactoriesInstances(SpringBootExceptionReporter.class, new Class[]{ConfigurableApplicationContext.class}, context);
-        // 2.1 准备SpringBoot上下文
+        // 2.1 准备SpringBoot上下文，重点1
         this.prepareContext(context, environment, listeners, applicationArguments, printedBanner);
-        // 3.1 刷新SpringBoot上下文
+        // 3.1 刷新SpringBoot上下文，重点2
         this.refreshContext(context);
-        // 4.1 运行SpringBoot上下文
+        // 4.1 运行SpringBoot上下文，重点3
         this.afterRefresh(context, applicationArguments);
         stopWatch.stop();
         if (this.logStartupInfo) {
@@ -270,9 +281,10 @@ private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners
         ApplicationArguments applicationArguments) {
     // Create and configure the environment
     ConfigurableEnvironment environment = getOrCreateEnvironment();
+    // 配置环境变量
     configureEnvironment(environment, applicationArguments.getSourceArgs());
     ConfigurationPropertySources.attach(environment);
-    // 监听器进入环境准备阶段
+    // 监听器发布 程序环境准备已完成
     listeners.environmentPrepared(environment);
     bindToSpringApplication(environment);
     if (!this.isCustomEnvironment) {
@@ -281,6 +293,21 @@ private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners
     }
     ConfigurationPropertySources.attach(environment);
     return environment;
+}
+
+private ConfigurableEnvironment getOrCreateEnvironment() {
+    if (this.environment != null) {
+        return this.environment;
+    }
+    switch (this.webApplicationType) {
+        case SERVLET:
+            // Servlet环境，构造器
+            return new StandardServletEnvironment();
+        case REACTIVE:
+            return new StandardReactiveWebEnvironment();
+        default:
+            return new StandardEnvironment();
+    }
 }
 ```
 
@@ -318,6 +345,105 @@ protected ConfigurableApplicationContext createApplicationContext() {
     return (ConfigurableApplicationContext) BeanUtils.instantiateClass(contextClass);
 }
 ```
+
+## 2.1 准备SpringBoot上下文，重点
+
+```java
+private void prepareContext(ConfigurableApplicationContext context, ConfigurableEnvironment environment,
+        SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner) {
+    // 设置上下文环境
+    context.setEnvironment(environment);
+    // 2.2 前置处理
+    postProcessApplicationContext(context);
+    // 2.3 程序上下文初始化
+    applyInitializers(context);
+    listeners.contextPrepared(context);
+    if (this.logStartupInfo) {
+        logStartupInfo(context.getParent() == null);
+        logStartupProfileInfo(context);
+    }
+    // Add boot specific singleton beans，添加指定的单例bean，获取bean工厂
+    ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+    beanFactory.registerSingleton("springApplicationArguments", applicationArguments);
+    if (printedBanner != null) {
+        beanFactory.registerSingleton("springBootBanner", printedBanner);
+    }
+    if (beanFactory instanceof DefaultListableBeanFactory) {
+        ((DefaultListableBeanFactory) beanFactory)
+                .setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
+    }
+    if (this.lazyInitialization) {
+        context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor());
+    }
+    // Load the sources
+    Set<Object> sources = getAllSources();
+    Assert.notEmpty(sources, "Sources must not be empty");
+    load(context, sources.toArray(new Object[0]));
+    listeners.contextLoaded(context);
+}
+```
+
+### 2.2 应用上下文的前置处理
+```java
+// 应用上下文的前置处理
+protected void postProcessApplicationContext(ConfigurableApplicationContext context) {
+    // bean name 生成器
+    if (this.beanNameGenerator != null) {
+        context.getBeanFactory().registerSingleton(AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR,
+                this.beanNameGenerator);
+    }
+    // 资源加载器
+    if (this.resourceLoader != null) {
+        if (context instanceof GenericApplicationContext) {
+            ((GenericApplicationContext) context).setResourceLoader(this.resourceLoader);
+        }
+        if (context instanceof DefaultResourceLoader) {
+            ((DefaultResourceLoader) context).setClassLoader(this.resourceLoader.getClassLoader());
+        }
+    }
+    // 添加转换服务
+    if (this.addConversionService) {
+        context.getBeanFactory().setConversionService(ApplicationConversionService.getSharedInstance());
+    }
+}
+```
+
+### 2.3 初始化容器前的处理
+```java
+// 如果我们有定制化需求，我们也可以自己实现这个接口
+protected void applyInitializers(ConfigurableApplicationContext context) {
+    // 通过getInitializers() 我们可以知道Springboot内置的初始化器都有哪些
+    for (ApplicationContextInitializer initializer : getInitializers()) {
+        Class<?> requiredType = GenericTypeResolver.resolveTypeArgument(initializer.getClass(),
+                ApplicationContextInitializer.class);
+        Assert.isInstanceOf(requiredType, context, "Unable to call initializer.");
+        initializer.initialize(context);
+    }
+}
+
+// 接口
+public interface ApplicationContextInitializer<C extends ConfigurableApplicationContext> {
+
+	/**
+	 * Initialize the given application context.
+	 * @param applicationContext the application to configure
+	 */
+	void initialize(C applicationContext);
+
+}
+```
+
+补充
+```java
+
+```
+
+## 3.1 刷新SpringBoot上下文，重点
+
+
+## 4.1 运行SpringBoot上下文，重点
+
+
 
 > TIPS : BeanUtils.instantiateClass()，是一个很不错的Spring专用的工具类
 
