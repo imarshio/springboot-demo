@@ -11,7 +11,7 @@ public class AbstractUsage {
     // 这是因为双亲委派机制，子类对象的构造方法在调用父类构造方法之前，会先调用父类的构造方法。
     public static void main(String[] args) {
         ExtendsClass01 concreteClass = new ExtendsClass01();
-        // concreteClass.abstractMethod();
+        concreteClass.refresh();
 
         // 分割线
         System.out.println("分割线");
@@ -19,9 +19,9 @@ public class AbstractUsage {
         ExtendsClass02 concreteClass2 = new ExtendsClass02();
         // concreteClass2.abstractMethod();
 
-        System.out.println("分割线");
-
-        NonAbstractClassSon nonAbstractClassSon = new NonAbstractClassSon();
+        // System.out.println("分割线");
+        //
+        // NonAbstractClassSon nonAbstractClassSon = new NonAbstractClassSon();
     }
 
     public abstract static class AbstractClass {
@@ -33,7 +33,14 @@ public class AbstractUsage {
             // 声明的类为ExtendsClass02，那么调用的就是ExtendsClass02的abstractMethod方法。
             abstractMethod();
         }
+
+        public void refresh() {
+            // call protected method
+            abstractMethod();
+        }
+
         protected void abstractMethod() {
+            System.out.println("abstractMethod call");
         }
     }
 
@@ -44,9 +51,14 @@ public class AbstractUsage {
         }
 
         @Override
+        public void refresh() {
+            super.refresh();
+        }
+
+        @Override
         protected void abstractMethod() {
             // do nothing
-            System.out.println("ExtendsClass01");
+            System.out.println("ExtendsClass01 call");
         }
     }
 
