@@ -5,4 +5,4 @@ logging:
     path: ./logs
   level:
     root: info
-    tech.deepq: info
+    com.marshio.demo: info

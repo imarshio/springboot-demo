@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import javax.sql.DataSource;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author marshio
@@ -73,7 +74,8 @@ public class SampleTest {
         parameters.put("name", "marshio");
         parameters.put("age", 18);
         List<Map<String, Object>> result = jdbcTemplate.queryForList(sql);
-        System.out.println(SPEL_EXPRESSION_PARSER.parseExpression("size() > 0 ? get(0).get('group_concat'): ''").getValue(result));;
+        System.out.println(SPEL_EXPRESSION_PARSER.parseExpression("size() > 0 ? get(0).get('group_concat'): ''").getValue(result));
+        ;
     }
 
     /**
@@ -105,12 +107,25 @@ public class SampleTest {
         result.forEach(System.out::println);
     }
 
+    @Test
+    public void test06() {
+        List<Boolean> success = List.of(true, false, true, false);
+        AtomicBoolean pushSaved = new AtomicBoolean(true);
+        Optional.of(success)
+                .orElseThrow()
+                .forEach(s -> {
+                    pushSaved.set(s && pushSaved.get());
+                });
+        System.out.println(pushSaved.get());
+    }
+
+
     private static JdbcTemplate getJdbcTemplate() {
         // 手动注册数据源
         HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl("jdbc:mysql://47.116.58.10:3306/pyspider_sit_resultdb?charset=utf8mb4&useSSL=false");
-        hikariConfig.setUsername("pyspider_user");
-        hikariConfig.setPassword("ND0328qSywfre");
+        hikariConfig.setJdbcUrl("jdbc:mysql://mysql.marshio.com:3306/pyspider_sit_resultdb?charset=utf8mb4&useSSL=false");
+        hikariConfig.setUsername("root");
+        hikariConfig.setPassword("root");
         hikariConfig.setDriverClassName("com.mysql.cj.jdbc.Driver");
         hikariConfig.setConnectionTestQuery("SELECT 1");
         hikariConfig.setMaximumPoolSize(10);
@@ -125,9 +140,9 @@ public class SampleTest {
     private static JdbcTemplate getPostgreSqlJdbcTemplate() {
         // 手动注册数据源
         HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl("jdbc:postgresql://pg-sit.deepq.tech:5432/deliver_poc?currentSchema=mj_items");
-        hikariConfig.setUsername("deliver_poc");
-        hikariConfig.setPassword("Deepq@deliver_poc2022");
+        hikariConfig.setJdbcUrl("jdbc:postgresql://pg.marshio.com:5432/demo?currentSchema=public");
+        hikariConfig.setUsername("demo");
+        hikariConfig.setPassword("demo");
         hikariConfig.setDriverClassName("org.postgresql.Driver");
         hikariConfig.setConnectionTestQuery("SELECT 1");
         hikariConfig.setMaximumPoolSize(10);

@@ -5,8 +5,8 @@ spring:
     name: demo-mail
   mail:
     host: smtp.qiye.aliyun.com
-    username: sre@shenqingtech.com
-    password: sreSQ000
+    username: demo@marshio.com
+    password: demo
     port: 465
     default-encoding: UTF-8
     jndi-name: mail/Session

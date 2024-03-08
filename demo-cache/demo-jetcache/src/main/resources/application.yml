@@ -20,5 +20,5 @@ jetcache:
         minIdle: 5
         maxIdle: 20
         maxTotal: 50
-      host: dc.deepq.tech
+      host: marshio.com
       port: 6372
