@@ -24,10 +24,22 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
+        <!-- <dependency> -->
+        <!--     <groupId>org.slf4j</groupId> -->
+        <!--     <artifactId>slf4j-simple</artifactId> -->
+        <!-- </dependency> -->
+
+        <!-- slf4j和log4j结合使用，需要添加配置文件，log4j.properties -->
+        <!-- 一个依赖即可，其自带slf4j-api依赖和log4j依赖 -->
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <artifactId>slf4j-log4j12</artifactId>
         </dependency>
+
+        <!-- <dependency> -->
+        <!--     <groupId></groupId> -->
+        <!--     <artifactId>slf4j-</artifactId> -->
+        <!-- </dependency> -->
     </dependencies>
 
 </project>

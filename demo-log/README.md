@@ -26,6 +26,8 @@
 
 - 参考：https://whatsrtos.github.io/Java/JavaEE-Log/
 
+日志门面和日志实现的关系就像
+
 ## 演进
 
 https://www.yuque.com/u21559410/xqh5kz/tcevtc7ulef4tnzb?inner=enOcZ
@@ -162,6 +164,26 @@ J.U.L默认会加载logging.properties。
 - `$JAVA_HOME/jre/lib/`： Java 8及之前的版本的配置文件放在这个位置
 - `$JAVA_HOME/conf` ： Java 9及之后的版本的配置文件放在这个位置
 
+配置文件样例
+
+```properties
+# Logs to file and console
+handlers=java.util.logging.FileHandler, java.util.logging.ConsoleHandler
+# Global logging levels, 7 levels
+.level=SEVERE
+# Log file output in user's home directory, %h
+java.util.logging.FileHandler.pattern=%h/java%u.log
+java.util.logging.FileHandler.limit=50000
+java.util.logging.FileHandler.count=1
+java.util.logging.FileHandler.formatter=java.util.logging.XMLFormatter
+# java.util.logging.FileHandler.formatter = java.util.logging.SimpleFormatter
+java.util.logging.ConsoleHandler.level=INFO
+java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
+java.util.logging.SimpleFormatter.format=[%1$tc] %4$s: %5$s %n
+# log level for package
+com.mkyong.level=SEVERE
+```
+
 除了默认的加载方式外，还可以通过其他方式加载配置文件
 
 - 运行时指定加载文件
@@ -239,25 +261,7 @@ J.U.L默认会加载logging.properties。
     }
   ```
 
-配置文件样例
 
-```properties
-# Logs to file and console
-handlers=java.util.logging.FileHandler, java.util.logging.ConsoleHandler
-# Global logging levels, 7 levels
-.level=SEVERE
-# Log file output in user's home directory, %h
-java.util.logging.FileHandler.pattern=%h/java%u.log
-java.util.logging.FileHandler.limit=50000
-java.util.logging.FileHandler.count=1
-java.util.logging.FileHandler.formatter=java.util.logging.XMLFormatter
-# java.util.logging.FileHandler.formatter = java.util.logging.SimpleFormatter
-java.util.logging.ConsoleHandler.level=INFO
-java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
-java.util.logging.SimpleFormatter.format=[%1$tc] %4$s: %5$s %n
-# log level for package
-com.mkyong.level=SEVERE
-```
 
 ## J.C.L(commons-logging)
 
@@ -801,6 +805,7 @@ Simple Log Facade for Java(SLF4J). 日志门面。
         </dependency>
 		<!-- 包含简单的日志实现 -->
         <dependency>
+            <!-- 这里我只是引入了slf4j自己的日志实现，它还可以替换为其它的实现，比如log4j、log4j2等，只需要引入对应的依赖即可 -->
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
         </dependency>
@@ -819,6 +824,12 @@ public class SLF4JApplication {
 }
 ```
 
+#### 输出
+
+```shell
+[main] INFO com.marshio.demo.log.SLF4JApplication - Hello World
+```
+
 
 
 
@@ -826,6 +837,12 @@ public class SLF4JApplication {
 ## Logback
 
 官网：https://logback.qos.ch/
+文档：https://logback.qos.ch/documentation.html
+手册：https://logback.qos.ch/manual/index.html
+
+`Logback is intended as a successor to the popular log4j project, picking up where log4j 1.x leaves off.`
+
+
 
 ### 日志级别
 
@@ -842,3 +859,6 @@ public class SLF4JApplication {
 ### 核心组件
 
 ### 配置
+
+
+## 使用
