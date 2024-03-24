@@ -14,6 +14,7 @@
         <module>demo-log4j</module>
         <module>demo-log4j2</module>
         <module>demo-logback</module>
+        <module>demo-springboot-logging</module>
     </modules>
     <modelVersion>4.0.0</modelVersion>
     <packaging>pom</packaging>

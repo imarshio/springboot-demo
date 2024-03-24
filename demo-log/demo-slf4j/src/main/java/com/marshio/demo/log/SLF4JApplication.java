@@ -3,6 +3,7 @@ package com.marshio.demo.log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * @author marshio
  * @desc
@@ -10,8 +11,11 @@ import org.slf4j.LoggerFactory;
  */
 public class SLF4JApplication {
 
+    private final static Logger logger = LoggerFactory.getLogger(SLF4JApplication.class);
+
     public static void main(String[] args) {
-        Logger logger = LoggerFactory.getLogger(SLF4JApplication.class);
-        logger.info("Hello World");
+
+        // logger.
+        logger.debug("Hello World");
     }
 }

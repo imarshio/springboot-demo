@@ -4,6 +4,21 @@
 
 https://docs.spring.io/spring-framework/docs/3.0.x/reference/overview.html
 
+Springboot作为我们最常用的一款框架，其启动流程、注册机制、容器管理、bean加载、启动后是如何保持服务一直运行的，这些问题你都清楚嘛？
+
+如果你也不清楚，那么我们来一起看看SpringBoot是如何启动的吧，在这里你会了解到Springboot是如何启动的，并且是如何支持上述问题的。
+
+问题清单
+
+- 启动流程
+- 注册机制
+- 容器管理
+- bean加载过程
+- 日志框架
+- 启动后是如何保持服务一直运行的？
+
+流程图我后续会整理到：https://www.processon.com/diagraming/63e39fc810a38f1c1873131e
+
 接下来我们跟踪源码进入Spring的启动过程，看看Spring启动时都发生了什么？
 
 ## 1.1 入口
@@ -371,7 +386,7 @@ public class AnnotationConfigServletWebServerApplicationContext extends ServletW
 
     /**
      * Create a new {@link AnnotationConfigServletWebServerApplicationContext} that needs
-     * to be populated through register (a method in this class that i didn't show) calls 
+     * to be populated through register (a method in this class that I didn't show) calls 
      * and then manually refresh ( another method).
      */
     public AnnotationConfigServletWebServerApplicationContext() {
@@ -762,6 +777,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 ### 3.2 准备上下文刷新
 
 ```java
+    @SuppressWarnings("all")
 	protected void prepareRefresh() {
 		// Switch to active.
 		this.startupDate = System.currentTimeMillis();
@@ -778,12 +794,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
-    // 初始化参数源，其实这里没做什么实际的事情
+        // 初始化参数源，其实这里没做什么实际的事情
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
-    // 校验参数是否合法
+        // 校验参数是否合法
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
@@ -805,6 +821,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 ### 3.3 获取beanFactory
 
 ```java
+    @SuppressWarnings("all")
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
 		refreshBeanFactory();
     // 返回的也是context中的beanFactory
@@ -812,6 +829,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	}
 
 	@Override
+    @SuppressWarnings("all")
 	protected final void refreshBeanFactory() throws IllegalStateException {
 		if (!this.refreshed.compareAndSet(false, true)) {
 			throw new IllegalStateException(
@@ -836,6 +854,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 ```java
 // 	
+@SuppressWarnings("all")
 protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		// Tell the internal bean factory to use the context's class loader etc.
 		beanFactory.setBeanClassLoader(getClassLoader());
@@ -972,10 +991,7 @@ SpEL表达式的结构丰富多样，可以执行以下操作：
 ### 常见的表达式引擎
 
 - MVEL (MVFLEX Expression Language)：是一个独立的开源项目，它提供了一个轻量级且功能丰富的运行时表达式引擎，可在Java应用中进行复杂的表达式求值。
--
-
-Aviator是一个高性能、轻量级的Java表达式求值引擎，它允许在Java应用中进行简单的数学和逻辑表达式的计算，尤其适合于动态生成或处理SQL查询语句等场景。https://github.com/killme2008/aviatorscript
-
+- Aviator是一个高性能、轻量级的Java表达式求值引擎，它允许在Java应用中进行简单的数学和逻辑表达式的计算，尤其适合于动态生成或处理SQL查询语句等场景。https://github.com/killme2008/aviatorscript
 - OGNL (Object-Graph Navigation Language)：主要用于Apache Struts框架和一些其他Java库，用于获取和设置Java对象的属性以及调用方法。
 - JEXL (Java Expression Language)：来自Apache Commons项目，也是一个轻量级的、可嵌入的表达式语言，能够执行简单的到较为复杂的表达式。
 - JavaScript scripting in Java：通过javax.script包（即JSR 223: Scripting for the Java
@@ -983,8 +999,7 @@ Aviator是一个高性能、轻量级的Java表达式求值引擎，它允许在
 - Groovy expressions: Groovy作为一种与Java高度兼容的编程语言，其表达式可以在Java应用程序中被当作脚本语言来执行
 - Janino：一个纯Java编写的类文件生成器和轻量级的脚本引擎，可以将Java代码作为字符串编译并执行。
 - JEP (Java Mathematical Expression Parser)：一个用Java编写的数学表达式解析器，它可以解析和评估包含变量、函数和操作符的数学表达式。
-- EL (Expression Language)：在Java
-  EE环境中广泛使用的标准表达式语言，用于在JSP、JSF等技术中动态插入或修改内容。它也可以通过javax.el.*包在非Web应用中使用。
+- EL (Expression Language)：在Java EE环境中广泛使用的标准表达式语言，用于在JSP、JSF等技术中动态插入或修改内容。它也可以通过javax.el.*包在非Web应用中使用。
 - Velocity Templating Engine 和 FreeMarker：虽然主要作为模板引擎使用，但它们同样支持在模板中编写表达式以进行简单的逻辑判断和数据操作。
 
 ### 案例

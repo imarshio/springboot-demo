@@ -22,23 +22,42 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
         </dependency>
 
+        <!-- slf4j官方的简单实现 -->
         <!-- <dependency> -->
         <!--     <groupId>org.slf4j</groupId> -->
         <!--     <artifactId>slf4j-simple</artifactId> -->
         <!-- </dependency> -->
 
-        <!-- slf4j和log4j结合使用，需要添加配置文件，log4j.properties -->
-        <!-- 一个依赖即可，其自带slf4j-api依赖和log4j依赖 -->
+
+        <!-- https://mvnrepository.com/artifact/org.slf4j/jul-to-slf4j -->
+        <!-- 将jul的日志重定向到slf4j -->
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
+            <artifactId>jul-to-slf4j</artifactId>
+            <version>1.7.30</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+        </dependency>
+
+
+        <!-- slf4j 和 log4j 结合使用，需要添加配置文件，log4j.properties -->
+        <!-- log4j-slf4j-impl should be used with SLF4J 1.7.x releases or older. -->
         <!-- <dependency> -->
-        <!--     <groupId></groupId> -->
-        <!--     <artifactId>slf4j-</artifactId> -->
+        <!--     <groupId>org.apache.logging.log4j</groupId> -->
+        <!--     <artifactId>log4j-slf4j-impl</artifactId> -->
+        <!-- </dependency> -->
+
+
+        <!-- log4j-slf4j2-impl should be used with SLF4J 2.0.x releases or newer. -->
+        <!-- <dependency> -->
+        <!--     <groupId>org.apache.logging.log4j</groupId> -->
+        <!--     <artifactId>log4j-slf4j2-impl</artifactId> -->
         <!-- </dependency> -->
     </dependencies>
 
