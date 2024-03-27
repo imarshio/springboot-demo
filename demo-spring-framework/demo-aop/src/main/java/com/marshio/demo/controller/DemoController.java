@@ -1,6 +1,7 @@
 package com.marshio.demo.controller;
 
 import com.marshio.demo.annotation.DemoAnnotation;
+import com.marshio.demo.annotation.StopWatch;
 import com.marshio.demo.service.DemoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,7 @@ public class DemoController {
 
     @GetMapping("")
     @DemoAnnotation(value = "demo")
+    @StopWatch(value = "demo")
     public String demo() {
         return demoService.demo();
     }
