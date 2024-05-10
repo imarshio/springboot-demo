@@ -16,12 +16,14 @@ import org.springframework.stereotype.Component;
 public class DemoLoggerAspect {
 
     // @Pointcut() 声明一个切面，声明的方法返回必须为空
+    // https://docs.spring.io/spring-framework/reference/core/aop/ataspectj/pointcuts.html
 
     @Pointcut("@annotation(com.marshio.demo.annotation.DemoAnnotation)")
     public void logAdvice() {
         // 切面方法应该为空
     }
 
+    // https://docs.spring.io/spring-framework/reference/core/aop/ataspectj/advice.html#aop-advice-after-throwing
     @Before("logAdvice()")
     public void before() {
         // 执行切面方法之前需要执行的
@@ -42,7 +44,7 @@ public class DemoLoggerAspect {
 
     @After("logAdvice()")
     public void after() {
-        // 执行切面方法之后需要执行的
+        // 执行切面方法之后需要执行的  == finally块
         log.info("3、执行切面方法之后...");
     }
 }

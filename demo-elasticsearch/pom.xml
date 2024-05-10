@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.marshio.demo</groupId>
+        <artifactId>springboot-demo</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>demo-elasticsearch</artifactId>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <description>A demo project for Elasticsearch with Spring Boot</description>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-json</artifactId>
+        </dependency>
+        <!-- 支持Elasticsearch的spring-data组件 -->
+        <!-- <dependency> -->
+        <!--     <groupId>org.springframework.data</groupId> -->
+        <!--     <artifactId>spring-data-elasticsearch</artifactId> -->
+        <!-- </dependency> -->
+
+        <!-- spring-boot-starter-data-elasticsearch是一个spring-boot-starter，代表他是一个支持自动装配的依赖，不需要手动配置 -->
+        <!-- 如果你用的是spring-boot框架，那么你只需要引入spring-boot-starter-data-elasticsearch依赖即可，其包含了spring-data-elasticsearch依赖 -->
+        <!-- https://docs.spring.io/spring-boot/docs/current/reference/html/data.html#data.nosql.elasticsearch -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
+
+        <!-- <dependency> -->
+        <!--     <groupId>org.springframework.data</groupId> -->
+        <!--     <artifactId>spring-data-elasticsearch</artifactId> -->
+        <!-- </dependency> -->
+
+        <!-- Note！ -->
+        <!-- spring-boot与elasticsearch之间的版本兼容是一个很大的问题，你需要确保自己的spring-boot版本与elasticsearch版本兼容 -->
+        <!-- 版本兼容可以参考：https://github.com/elastic/elasticsearch/issues/new?assignees=&labels=compatibility-issue&template=compatibility-issue.md&title= -->
+    </dependencies>
+
+</project>

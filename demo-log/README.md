@@ -916,6 +916,37 @@ logback的配置文件为`logback.xml`或`logback-test.xml`，放在`resources`�
 </configuration>
 ```
 
+#### 日志异步输出到文件配置
+
+```xml
+<configuration>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日志文件名 -->
+        <file>./logs/application.log</file>
+        <!-- 日志滚动输出策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>./logs/application-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>14</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>utf-8</charset>
+            <Pattern>%d %-5level [%thread] %logger{0}: %msg%n</Pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <root level="${logging.level.root}">
+        <appender-ref ref="ASYNC"/>
+    </root>
+  
+</configuration>
+```
+
 #### 依赖
 
 Logback、SLF4J与Java之间的依赖关系参考：https://logback.qos.ch/news.html
