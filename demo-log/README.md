@@ -178,7 +178,7 @@ java.util.logging.ConsoleHandler.level=INFO
 java.util.logging.ConsoleHandler.formatter=java.util.logging.SimpleFormatter
 java.util.logging.SimpleFormatter.format=[%1$tc] %4$s: %5$s %n
 # log level for package
-com.mkyong.level=SEVERE
+com.marshio.demo.level=SEVERE
 ```
 
 除了默认的加载方式外，还可以通过其他方式加载配置文件
@@ -728,6 +728,8 @@ Simple Log Facade for Java(SLF4J). 日志门面。
 - TRACE
 
 ### 核心组件
+
+
 
 ### 配置
 

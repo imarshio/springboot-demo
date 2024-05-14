@@ -633,7 +633,46 @@ public interface ApplicationContextInitializer<C extends ConfigurableApplication
 补充，如何添加自实现的initializer
 
 ```java
+@Order(199)
+public class ApplicationContextInitializerUsage implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
+    // 日志
+    private static final Log log = LogFactory.getLog(ApplicationContextInitializerUsage.class);
+
+    @Override
+    public void initialize(ConfigurableApplicationContext applicationContext) {
+        // 在初始化容器之前，可以对容器进行一些初始化操作
+        log.info("ApplicationContextInitializerUsage.initialize()");
+        log.info("applicationContext is active " + applicationContext.isActive());
+        log.info("applicationContext application name: " + applicationContext.getApplicationName());
+        log.info("applicationContext display name :" + applicationContext.getDisplayName());
+        log.info("applicationContext beanFactory : " + applicationContext.getBeanFactory());
+        log.info("applicationContext beanDefinition count :" + applicationContext.getBeanDefinitionCount());
+        log.info("applicationContext BeanDefinitionNames :" + Arrays.toString(applicationContext.getBeanDefinitionNames()));
+        // log.info("applicationContext AutowireCapableBeanFactory :" + applicationContext.getAutowireCapableBeanFactory());
+        log.info("applicationContext class loader :" + applicationContext.getClassLoader());
+        log.info("applicationContext startup date :" + applicationContext.getStartupDate());
+    }
+}
+
+@Slf4j
+@SpringBootApplication
+public class BootProcessApplication {
+
+    public static void main(String[] args) {
+        // 启动入口
+        // SpringApplication.run(BootProcessApplication.class, args);
+
+        // 声明
+        SpringApplication app = new SpringApplication(BootProcessApplication.class);
+
+        // 注册启动器
+        app.addInitializers(new ApplicationContextInitializerUsage());
+
+        // 启动
+        app.run();
+    }
+}
 ```
 
 ## 3.1 刷新SpringBoot上下文 *重点*
@@ -824,7 +863,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
     @SuppressWarnings("all")
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
 		refreshBeanFactory();
-    // 返回的也是context中的beanFactory
+        // 返回的也是context中的beanFactory
 		return getBeanFactory();
 	}
 
@@ -835,7 +874,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			throw new IllegalStateException(
 					"GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");
 		}
-    // 还记得这里的beanFactory是在什么时候声明的吗？
+        // 还记得这里的beanFactory是在什么时候声明的吗？
 		this.beanFactory.setSerializationId(getId());
 	}
 ```
@@ -879,7 +918,7 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 
 		// Register early post-processor for detecting inner beans as ApplicationListeners.
 		// 这里需要看一下，下一步要用到
-  	beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
+  	    beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found.
 		if (beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
