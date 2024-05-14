@@ -455,10 +455,12 @@ public class AnnotatedBeanDefinitionReader {
 
 #### 1.6.3 registerAnnotationConfigProcessors
 
-注册注解配置处理器
+注册注解配置处理器，这里面的代码需要着重看下，涉及到了一个beanDefinition是如何被添加到beanDefinitionMap的。
+
+这里的Bean都是spring自己定义的bean。
 
 ```java
-    // 最终方法会调用到这里
+// 最终方法会调用到这里
 public static Set<BeanDefinitionHolder> registerAnnotationConfigProcessors(
         BeanDefinitionRegistry registry, @Nullable Object source) {
     // 这里我们需要想一下，beanFactory是什么时候被放进来的？
@@ -475,12 +477,14 @@ public static Set<BeanDefinitionHolder> registerAnnotationConfigProcessors(
         }
     }
     
-    // 声明一个存储bean定义的holder的集合
+    // 声明一个存储bean定义的holder的集合，重要的不是这个beanDefs，而是再添加到这个集合前做的处理registerPostProcessor
     Set<BeanDefinitionHolder> beanDefs = new LinkedHashSet<>(8);
 
     if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+        // 生成 BeanDef，准备
         RootBeanDefinition def = new RootBeanDefinition(ConfigurationClassPostProcessor.class);
         def.setSource(source);
+        // 第一次
         beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
     }
 
@@ -525,6 +529,113 @@ public static Set<BeanDefinitionHolder> registerAnnotationConfigProcessors(
 
     return beanDefs;
 }
+
+private static BeanDefinitionHolder registerPostProcessor(
+        BeanDefinitionRegistry registry, RootBeanDefinition definition, String beanName) {
+	
+    definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+    // 调用Bean注册器将BeanDef注册进去，容器管理
+    registry.registerBeanDefinition(beanName, definition);
+    return new BeanDefinitionHolder(definition, beanName);
+}
+
+// 发现是个接口，查看他的实现
+void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+        throws BeanDefinitionStoreException;
+
+// 这里我们看一下registry的父类，一级一级往上找，找到了GenericApplicationContext，进去
+@Override
+public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+        throws BeanDefinitionStoreException {
+
+    // 进去
+    this.beanFactory.registerBeanDefinition(beanName, beanDefinition);
+}
+
+
+// 找到实际执行的地方，注意，程序执行的时候，所有的bean都需要现在这里进行注册，不管是注解声明的bean还是配置声明的bean，还是系统指定的bean
+// 在声明实现的时候都会到这里进行注册
+@Override
+public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+        throws BeanDefinitionStoreException {
+
+    Assert.hasText(beanName, "Bean name must not be empty");
+    Assert.notNull(beanDefinition, "BeanDefinition must not be null");
+
+    if (beanDefinition instanceof AbstractBeanDefinition) {
+        try {
+            ((AbstractBeanDefinition) beanDefinition).validate();
+        }
+        catch (BeanDefinitionValidationException ex) {
+            throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
+                    "Validation of bean definition failed", ex);
+        }
+    }
+
+    // 先检查beanDefinitionMap里面是否存在，
+    BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
+    if (existingDefinition != null) {
+        // 如果存在
+        if (!isAllowBeanDefinitionOverriding()) {
+            // 判断是否可以覆写
+            throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
+        }
+        else if (existingDefinition.getRole() < beanDefinition.getRole()) {
+            // e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
+            if (logger.isInfoEnabled()) {
+                logger.info("Overriding user-defined bean definition for bean '" + beanName +
+                        "' with a framework-generated bean definition: replacing [" +
+                        existingDefinition + "] with [" + beanDefinition + "]");
+            }
+        }
+        else if (!beanDefinition.equals(existingDefinition)) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Overriding bean definition for bean '" + beanName +
+                        "' with a different definition: replacing [" + existingDefinition +
+                        "] with [" + beanDefinition + "]");
+            }
+        }
+        else {
+            if (logger.isTraceEnabled()) {
+                logger.trace("Overriding bean definition for bean '" + beanName +
+                        "' with an equivalent definition: replacing [" + existingDefinition +
+                        "] with [" + beanDefinition + "]");
+            }
+        }
+        // 将bd放到map中
+        this.beanDefinitionMap.put(beanName, beanDefinition);
+    }
+    else {
+        // 不存在在map中
+        if (hasBeanCreationStarted()) {
+            // Cannot modify startup-time collection elements anymore (for stable iteration)
+            synchronized (this.beanDefinitionMap) {
+                // 锁一下
+                this.beanDefinitionMap.put(beanName, beanDefinition);
+                List<String> updatedDefinitions = new ArrayList<>(this.beanDefinitionNames.size() + 1);
+                updatedDefinitions.addAll(this.beanDefinitionNames);
+                updatedDefinitions.add(beanName);
+                this.beanDefinitionNames = updatedDefinitions;
+                removeManualSingletonName(beanName);
+            }
+        }
+        else {
+            // Still in startup registration phase
+            this.beanDefinitionMap.put(beanName, beanDefinition);
+            this.beanDefinitionNames.add(beanName);
+            removeManualSingletonName(beanName);
+        }
+        this.frozenBeanDefinitionNames = null;
+    }
+
+    if (existingDefinition != null || containsSingleton(beanName)) {
+        resetBeanDefinition(beanName);
+    }
+    else if (isConfigurationFrozen()) {
+        clearByTypeCache();
+    }
+}
+
 ```
 
 ##### 1.6.3.1 解答
@@ -700,7 +811,7 @@ public class SpringApplication {
     }
 
     protected void refresh(ConfigurableApplicationContext applicationContext) {
-      applicationContext.refresh();
+        applicationContext.refresh();
     }
     
     // ... 深入digging
@@ -757,15 +868,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
           onRefresh();
     
           // Check for listener beans and register them.
-          // 注册监听器
+          // 3.11 注册监听器
           registerListeners();
     
           // Instantiate all remaining (non-lazy-init) singletons.
-          // 3.11 实例化其他的单例模式
+          // 3.12 实例化所有的Bean
           finishBeanFactoryInitialization(beanFactory);
     
           // Last step: publish corresponding event.
-          // 3.12 
+          // 3.13 发送完成刷新的消息
           finishRefresh();
         }
     
@@ -816,77 +927,105 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 ### 3.2 准备上下文刷新
 
 ```java
-    @SuppressWarnings("all")
-	protected void prepareRefresh() {
-		// Switch to active.
-		this.startupDate = System.currentTimeMillis();
-		this.closed.set(false);
-		this.active.set(true);
+@SuppressWarnings("all")
+protected void prepareRefresh() {
+    // Switch to active.
+    this.startupDate = System.currentTimeMillis();
+    this.closed.set(false);
+    this.active.set(true);
 
-		if (logger.isDebugEnabled()) {
-			if (logger.isTraceEnabled()) {
-				logger.trace("Refreshing " + this);
-			}
-			else {
-				logger.debug("Refreshing " + getDisplayName());
-			}
-		}
+    if (logger.isDebugEnabled()) {
+        if (logger.isTraceEnabled()) {
+            logger.trace("Refreshing " + this);
+        }
+        else {
+            logger.debug("Refreshing " + getDisplayName());
+        }
+    }
 
-		// Initialize any placeholder property sources in the context environment.
-        // 初始化参数源，其实这里没做什么实际的事情
-		initPropertySources();
+    // Initialize any placeholder property sources in the context environment.
+    // 初始化参数源，其实这里没做什么实际的事情
+    initPropertySources();
 
-		// Validate that all properties marked as required are resolvable:
-		// see ConfigurablePropertyResolver#setRequiredProperties
-        // 校验参数是否合法
-		getEnvironment().validateRequiredProperties();
+    // Validate that all properties marked as required are resolvable:
+    // see ConfigurablePropertyResolver#setRequiredProperties
+    // 校验参数是否合法
+    getEnvironment().validateRequiredProperties();
 
-		// Store pre-refresh ApplicationListeners...
-		if (this.earlyApplicationListeners == null) {
-			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
-		}
-		else {
-			// Reset local application listeners to pre-refresh state.
-			this.applicationListeners.clear();
-			this.applicationListeners.addAll(this.earlyApplicationListeners);
-		}
+    // Store pre-refresh ApplicationListeners...
+    if (this.earlyApplicationListeners == null) {
+        this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
+    }
+    else {
+        // Reset local application listeners to pre-refresh state.
+        this.applicationListeners.clear();
+        this.applicationListeners.addAll(this.earlyApplicationListeners);
+    }
 
-		// Allow for the collection of early ApplicationEvents,
-		// to be published once the multicaster is available...
-		this.earlyApplicationEvents = new LinkedHashSet<>();
-	}
+    // Allow for the collection of early ApplicationEvents,
+    // to be published once the multicaster is available...
+    this.earlyApplicationEvents = new LinkedHashSet<>();
+}
 ```
 
 ### 3.3 获取beanFactory
 
-```java
-    @SuppressWarnings("all")
-	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
-		refreshBeanFactory();
-        // 返回的也是context中的beanFactory
-		return getBeanFactory();
-	}
+其实这里获取到beanFactory就是context声明的时候创建的beanFactory。
 
-	@Override
-    @SuppressWarnings("all")
-	protected final void refreshBeanFactory() throws IllegalStateException {
-		if (!this.refreshed.compareAndSet(false, true)) {
-			throw new IllegalStateException(
-					"GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");
-		}
-        // 还记得这里的beanFactory是在什么时候声明的吗？
-		this.beanFactory.setSerializationId(getId());
-	}
+```java
+@SuppressWarnings("all")
+protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+    refreshBeanFactory();
+    // 返回的也是context中的beanFactory
+    return getBeanFactory();
+}
+
+@Override
+@SuppressWarnings("all")
+protected final void refreshBeanFactory() throws IllegalStateException {
+    if (!this.refreshed.compareAndSet(false, true)) {
+        throw new IllegalStateException(
+                "GenericApplicationContext does not support multiple refresh attempts: just call 'refresh' once");
+    }
+    // 还记得这里的beanFactory是在什么时候声明的吗？
+    this.beanFactory.setSerializationId(getId());
+}
 ```
 
 在记一遍
 
 ```java
-	// 在createApplicationContext的时候，初始化的类的父类GenericApplicationContext的初始化方法中，新声明了一个beanFactory，就是我们现在即将使用的
+// 在createApplicationContext的时候，初始化的类的父类GenericApplicationContext的初始化方法中，新声明了一个beanFactory，就是我们现在即将使用的
 
-	public GenericApplicationContext() {
-		this.beanFactory = new DefaultListableBeanFactory();
+public GenericApplicationContext() {
+    this.beanFactory = new DefaultListableBeanFactory();
+}
+
+public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory
+		implements ConfigurableListableBeanFactory, BeanDefinitionRegistry, Serializable {
+    
+    public DefaultListableBeanFactory() {
+        super();
 	}
+}
+
+public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory
+		implements AutowireCapableBeanFactory {
+    
+	public AbstractAutowireCapableBeanFactory() {
+		super();
+		ignoreDependencyInterface(BeanNameAware.class);
+		ignoreDependencyInterface(BeanFactoryAware.class);
+		ignoreDependencyInterface(BeanClassLoaderAware.class);
+	}
+}
+
+public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory {
+	public AbstractBeanFactory() {
+	}
+}
+
+// 每个类都有很多的变量在实例化的时候被初始化
 ```
 
 ### 3.4 beanFactory的初始化
@@ -895,49 +1034,710 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 // 	
 @SuppressWarnings("all")
 protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
-		// Tell the internal bean factory to use the context's class loader etc.
-		beanFactory.setBeanClassLoader(getClassLoader());
-		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
-		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
+    // Tell the internal bean factory to use the context's class loader etc.
+    beanFactory.setBeanClassLoader(getClassLoader());
+    beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+    beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
-		// Configure the bean factory with context callbacks.
-		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
-		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
-		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
-		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
-		beanFactory.ignoreDependencyInterface(ApplicationEventPublisherAware.class);
-		beanFactory.ignoreDependencyInterface(MessageSourceAware.class);
-		beanFactory.ignoreDependencyInterface(ApplicationContextAware.class);
+    // Configure the bean factory with context callbacks.
+    beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+    beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
+    beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
+    beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
+    beanFactory.ignoreDependencyInterface(ApplicationEventPublisherAware.class);
+    beanFactory.ignoreDependencyInterface(MessageSourceAware.class);
+    beanFactory.ignoreDependencyInterface(ApplicationContextAware.class);
 
-		// BeanFactory interface not registered as resolvable type in a plain factory.
-		// MessageSource registered (and found for autowiring) as a bean.
-		beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
-		beanFactory.registerResolvableDependency(ResourceLoader.class, this);
-		beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
-		beanFactory.registerResolvableDependency(ApplicationContext.class, this);
+    // BeanFactory interface not registered as resolvable type in a plain factory.
+    // MessageSource registered (and found for autowiring) as a bean.
+    beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
+    beanFactory.registerResolvableDependency(ResourceLoader.class, this);
+    beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
+    beanFactory.registerResolvableDependency(ApplicationContext.class, this);
 
-		// Register early post-processor for detecting inner beans as ApplicationListeners.
-		// 这里需要看一下，下一步要用到
-  	    beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
+    // Register early post-processor for detecting inner beans as ApplicationListeners.
+    // 这里需要看一下，下一步要用到
+    beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
 
-		// Detect a LoadTimeWeaver and prepare for weaving, if found.
-		if (beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
-			beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
-			// Set a temporary ClassLoader for type matching.
-			beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
-		}
+    // Detect a LoadTimeWeaver and prepare for weaving, if found.
+    if (beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+        beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+        // Set a temporary ClassLoader for type matching.
+        beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+    }
 
-		// Register default environment beans.
-		if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
-			beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
-		}
-		if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
-			beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
-		}
-		if (!beanFactory.containsLocalBean(SYSTEM_ENVIRONMENT_BEAN_NAME)) {
-			beanFactory.registerSingleton(SYSTEM_ENVIRONMENT_BEAN_NAME, getEnvironment().getSystemEnvironment());
-		}
-	}
+    // Register default environment beans.
+    if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
+        beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
+    }
+    if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
+        beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
+    }
+    if (!beanFactory.containsLocalBean(SYSTEM_ENVIRONMENT_BEAN_NAME)) {
+        beanFactory.registerSingleton(SYSTEM_ENVIRONMENT_BEAN_NAME, getEnvironment().getSystemEnvironment());
+    }
+}
+```
+
+
+
+### 3.5 beanFactory的前置处理
+
+```java
+// 在AbstractApplicationContext里调用该方法，本身未实现，会调用子类的实现
+protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+}
+
+// 在调用这个方法的时候，会直接调用自己的这个方法
+@Override
+protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+    // 这里调用了父类的该方法
+    super.postProcessBeanFactory(beanFactory);
+    if (this.basePackages != null && this.basePackages.length > 0) {
+        this.scanner.scan(this.basePackages);
+    }
+    if (!this.annotatedClasses.isEmpty()) {
+        this.reader.register(ClassUtils.toClassArray(this.annotatedClasses));
+    }
+}
+
+// 父类的方法
+@Override
+protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+    if (this.servletContext != null) {
+        beanFactory.addBeanPostProcessor(new ServletContextAwareProcessor(this.servletContext));
+        beanFactory.ignoreDependencyInterface(ServletContextAware.class);
+    }
+    WebApplicationContextUtils.registerWebApplicationScopes(beanFactory, this.servletContext);
+    WebApplicationContextUtils.registerEnvironmentBeans(beanFactory, this.servletContext);
+}
+```
+
+
+
+### 3.6 引用BeanFactory后置处理
+
+这里会从注解和配置文件加载 BeanDefinition
+
+```java
+
+protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+    
+    PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
+
+    // Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
+    // (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
+    if (beanFactory.getTempClassLoader() == null && beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+        beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+        beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+    }
+}
+
+public static void invokeBeanFactoryPostProcessors(
+        ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
+
+    // Invoke BeanDefinitionRegistryPostProcessors first, if any.
+    Set<String> processedBeans = new HashSet<>();
+
+    if (beanFactory instanceof BeanDefinitionRegistry) {
+        BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
+        List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
+        List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
+
+        for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
+            if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
+                BeanDefinitionRegistryPostProcessor registryProcessor =
+                        (BeanDefinitionRegistryPostProcessor) postProcessor;
+                registryProcessor.postProcessBeanDefinitionRegistry(registry);
+                registryProcessors.add(registryProcessor);
+            }
+            else {
+                regularPostProcessors.add(postProcessor);
+            }
+        }
+
+        // Do not initialize FactoryBeans here: We need to leave all regular beans
+        // uninitialized to let the bean factory post-processors apply to them!
+        // Separate between BeanDefinitionRegistryPostProcessors that implement
+        // PriorityOrdered, Ordered, and the rest.
+        List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
+
+        // First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
+        String[] postProcessorNames =
+                beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+        for (String ppName : postProcessorNames) {
+            if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+                currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+                processedBeans.add(ppName);
+            }
+        }
+        sortPostProcessors(currentRegistryProcessors, beanFactory);
+        registryProcessors.addAll(currentRegistryProcessors);
+        invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+        currentRegistryProcessors.clear();
+
+        // Next, invoke the BeanDefinitionRegistryPostProcessors that implement Ordered.
+        postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+        for (String ppName : postProcessorNames) {
+            if (!processedBeans.contains(ppName) && beanFactory.isTypeMatch(ppName, Ordered.class)) {
+                currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+                processedBeans.add(ppName);
+            }
+        }
+        sortPostProcessors(currentRegistryProcessors, beanFactory);
+        registryProcessors.addAll(currentRegistryProcessors);
+        invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+        currentRegistryProcessors.clear();
+
+        // Finally, invoke all other BeanDefinitionRegistryPostProcessors until no further ones appear.
+        boolean reiterate = true;
+        while (reiterate) {
+            reiterate = false;
+            postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+            for (String ppName : postProcessorNames) {
+                if (!processedBeans.contains(ppName)) {
+                    currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+                    processedBeans.add(ppName);
+                    reiterate = true;
+                }
+            }
+            sortPostProcessors(currentRegistryProcessors, beanFactory);
+            registryProcessors.addAll(currentRegistryProcessors);
+            invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+            currentRegistryProcessors.clear();
+        }
+
+        // Now, invoke the postProcessBeanFactory callback of all processors handled so far.
+        invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
+        invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
+    }
+
+    else {
+        // Invoke factory processors registered with the context instance.
+        invokeBeanFactoryPostProcessors(beanFactoryPostProcessors, beanFactory);
+    }
+
+    // Do not initialize FactoryBeans here: We need to leave all regular beans
+    // uninitialized to let the bean factory post-processors apply to them!
+    String[] postProcessorNames =
+            beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
+
+    // Separate between BeanFactoryPostProcessors that implement PriorityOrdered,
+    // Ordered, and the rest.
+    List<BeanFactoryPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
+    List<String> orderedPostProcessorNames = new ArrayList<>();
+    List<String> nonOrderedPostProcessorNames = new ArrayList<>();
+    for (String ppName : postProcessorNames) {
+        if (processedBeans.contains(ppName)) {
+            // skip - already processed in first phase above
+        }
+        else if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+            priorityOrderedPostProcessors.add(beanFactory.getBean(ppName, BeanFactoryPostProcessor.class));
+        }
+        else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+            orderedPostProcessorNames.add(ppName);
+        }
+        else {
+            nonOrderedPostProcessorNames.add(ppName);
+        }
+    }
+
+    // First, invoke the BeanFactoryPostProcessors that implement PriorityOrdered.
+    sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
+    invokeBeanFactoryPostProcessors(priorityOrderedPostProcessors, beanFactory);
+
+    // Next, invoke the BeanFactoryPostProcessors that implement Ordered.
+    List<BeanFactoryPostProcessor> orderedPostProcessors = new ArrayList<>(orderedPostProcessorNames.size());
+    for (String postProcessorName : orderedPostProcessorNames) {
+        orderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
+    }
+    sortPostProcessors(orderedPostProcessors, beanFactory);
+    invokeBeanFactoryPostProcessors(orderedPostProcessors, beanFactory);
+
+    // Finally, invoke all other BeanFactoryPostProcessors.
+    List<BeanFactoryPostProcessor> nonOrderedPostProcessors = new ArrayList<>(nonOrderedPostProcessorNames.size());
+    for (String postProcessorName : nonOrderedPostProcessorNames) {
+        nonOrderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
+    }
+    invokeBeanFactoryPostProcessors(nonOrderedPostProcessors, beanFactory);
+
+    // Clear cached merged bean definitions since the post-processors might have
+    // modified the original metadata, e.g. replacing placeholders in values...
+    beanFactory.clearMetadataCache();
+}
+
+private static void invokeBeanDefinitionRegistryPostProcessors(
+        Collection<? extends BeanDefinitionRegistryPostProcessor> postProcessors, BeanDefinitionRegistry registry) {
+
+    for (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) {
+        postProcessor.postProcessBeanDefinitionRegistry(registry);
+    }
+}
+```
+
+
+
+```java
+@Override
+public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+    int registryId = System.identityHashCode(registry);
+    if (this.registriesPostProcessed.contains(registryId)) {
+        throw new IllegalStateException(
+                "postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
+    }
+    if (this.factoriesPostProcessed.contains(registryId)) {
+        throw new IllegalStateException(
+                "postProcessBeanFactory already called on this post-processor against " + registry);
+    }
+    this.registriesPostProcessed.add(registryId);
+
+    (registry);
+}
+
+public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+    List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+    String[] candidateNames = registry.getBeanDefinitionNames();
+
+    for (String beanName : candidateNames) {
+        BeanDefinition beanDef = registry.getBeanDefinition(beanName);
+        if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
+            }
+        }
+        else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+            configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
+        }
+    }
+
+    // Return immediately if no @Configuration classes were found
+    if (configCandidates.isEmpty()) {
+        return;
+    }
+
+    // Sort by previously determined @Order value, if applicable
+    configCandidates.sort((bd1, bd2) -> {
+        int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
+        int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
+        return Integer.compare(i1, i2);
+    });
+
+    // Detect any custom bean name generation strategy supplied through the enclosing application context
+    SingletonBeanRegistry sbr = null;
+    if (registry instanceof SingletonBeanRegistry) {
+        sbr = (SingletonBeanRegistry) registry;
+        if (!this.localBeanNameGeneratorSet) {
+            BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(
+                    AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR);
+            if (generator != null) {
+                this.componentScanBeanNameGenerator = generator;
+                this.importBeanNameGenerator = generator;
+            }
+        }
+    }
+
+    if (this.environment == null) {
+        this.environment = new StandardEnvironment();
+    }
+
+    // Parse each @Configuration class
+    ConfigurationClassParser parser = new ConfigurationClassParser(
+            this.metadataReaderFactory, this.problemReporter, this.environment,
+            this.resourceLoader, this.componentScanBeanNameGenerator, registry);
+
+    Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
+    Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
+    do {
+        parser.parse(candidates);
+        parser.validate();
+
+        Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
+        configClasses.removeAll(alreadyParsed);
+
+        // Read the model and create bean definitions based on its content
+        if (this.reader == null) {
+            this.reader = new ConfigurationClassBeanDefinitionReader(
+                    registry, this.sourceExtractor, this.resourceLoader, this.environment,
+                    this.importBeanNameGenerator, parser.getImportRegistry());
+        }
+        this.reader.loadBeanDefinitions(configClasses);
+        alreadyParsed.addAll(configClasses);
+
+        candidates.clear();
+        if (registry.getBeanDefinitionCount() > candidateNames.length) {
+            String[] newCandidateNames = registry.getBeanDefinitionNames();
+            Set<String> oldCandidateNames = new HashSet<>(Arrays.asList(candidateNames));
+            Set<String> alreadyParsedClasses = new HashSet<>();
+            for (ConfigurationClass configurationClass : alreadyParsed) {
+                alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
+            }
+            for (String candidateName : newCandidateNames) {
+                if (!oldCandidateNames.contains(candidateName)) {
+                    BeanDefinition bd = registry.getBeanDefinition(candidateName);
+                    if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &&
+                            !alreadyParsedClasses.contains(bd.getBeanClassName())) {
+                        candidates.add(new BeanDefinitionHolder(bd, candidateName));
+                    }
+                }
+            }
+            candidateNames = newCandidateNames;
+        }
+    }
+    while (!candidates.isEmpty());
+
+    // Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+    if (sbr != null && !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
+        sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
+    }
+
+    if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory) {
+        // Clear cache in externally provided MetadataReaderFactory; this is a no-op
+        // for a shared cache since it'll be cleared by the ApplicationContext.
+        ((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();
+    }
+}
+
+```
+
+
+
+
+
+### 3.6.  处理配置类
+
+```java
+public void parse(Set<BeanDefinitionHolder> configCandidates) {
+    for (BeanDefinitionHolder holder : configCandidates) {
+        BeanDefinition bd = holder.getBeanDefinition();
+        try {
+            if (bd instanceof AnnotatedBeanDefinition) {
+                parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());
+            }
+            else if (bd instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) bd).hasBeanClass()) {
+                parse(((AbstractBeanDefinition) bd).getBeanClass(), holder.getBeanName());
+            }
+            else {
+                parse(bd.getBeanClassName(), holder.getBeanName());
+            }
+        }
+        catch (BeanDefinitionStoreException ex) {
+            throw ex;
+        }
+        catch (Throwable ex) {
+            throw new BeanDefinitionStoreException(
+                    "Failed to parse configuration class [" + bd.getBeanClassName() + "]", ex);
+        }
+    }
+
+    this.deferredImportSelectorHandler.process();
+}
+
+protected final void parse(AnnotationMetadata metadata, String beanName) throws IOException {
+    processConfigurationClass(new ConfigurationClass(metadata, beanName), DEFAULT_EXCLUSION_FILTER);
+}
+
+protected void processConfigurationClass(ConfigurationClass configClass, Predicate<String> filter) throws IOException {
+    if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+        return;
+    }
+
+    ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+    if (existingClass != null) {
+        if (configClass.isImported()) {
+            if (existingClass.isImported()) {
+                existingClass.mergeImportedBy(configClass);
+            }
+            // Otherwise ignore new imported config class; existing non-imported class overrides it.
+            return;
+        }
+        else {
+            // Explicit bean definition found, probably replacing an import.
+            // Let's remove the old one and go with the new one.
+            this.configurationClasses.remove(configClass);
+            this.knownSuperclasses.values().removeIf(configClass::equals);
+        }
+    }
+
+    // Recursively process the configuration class and its superclass hierarchy.
+    SourceClass sourceClass = asSourceClass(configClass, filter);
+    do {
+        sourceClass = doProcessConfigurationClass(configClass, sourceClass, filter);
+    }
+    while (sourceClass != null);
+
+    this.configurationClasses.put(configClass, configClass);
+}
+```
+
+
+
+
+
+### 3.6. 扫描注解
+
+就是这里
+
+```java
+@Nullable
+protected final SourceClass doProcessConfigurationClass(
+        ConfigurationClass configClass, SourceClass sourceClass, Predicate<String> filter)
+        throws IOException {
+
+    if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
+        // Recursively process any member (nested) classes first
+        processMemberClasses(configClass, sourceClass, filter);
+    }
+
+    // Process any @PropertySource annotations
+    for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
+            sourceClass.getMetadata(), PropertySources.class,
+            org.springframework.context.annotation.PropertySource.class)) {
+        if (this.environment instanceof ConfigurableEnvironment) {
+            processPropertySource(propertySource);
+        }
+        else {
+            logger.info("Ignoring @PropertySource annotation on [" + sourceClass.getMetadata().getClassName() +
+                    "]. Reason: Environment must implement ConfigurableEnvironment");
+        }
+    }
+
+    // Process any @ComponentScan annotations
+    Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
+            sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
+    if (!componentScans.isEmpty() &&
+            !this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
+        for (AnnotationAttributes componentScan : componentScans) {
+            // The config class is annotated with @ComponentScan -> perform the scan immediately
+            Set<BeanDefinitionHolder> scannedBeanDefinitions =
+                    this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
+            // Check the set of scanned definitions for any further config classes and parse recursively if needed
+            for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
+                BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();
+                if (bdCand == null) {
+                    bdCand = holder.getBeanDefinition();
+                }
+                if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
+                    parse(bdCand.getBeanClassName(), holder.getBeanName());
+                }
+            }
+        }
+    }
+
+    // Process any @Import annotations
+    processImports(configClass, sourceClass, getImports(sourceClass), filter, true);
+
+    // Process any @ImportResource annotations
+    AnnotationAttributes importResource =
+            AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
+    if (importResource != null) {
+        String[] resources = importResource.getStringArray("locations");
+        Class<? extends BeanDefinitionReader> readerClass = importResource.getClass("reader");
+        for (String resource : resources) {
+            String resolvedResource = this.environment.resolveRequiredPlaceholders(resource);
+            configClass.addImportedResource(resolvedResource, readerClass);
+        }
+    }
+
+    // Process individual @Bean methods
+    Set<MethodMetadata> beanMethods = retrieveBeanMethodMetadata(sourceClass);
+    for (MethodMetadata methodMetadata : beanMethods) {
+        configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
+    }
+
+    // Process default methods on interfaces
+    processInterfaces(configClass, sourceClass);
+
+    // Process superclass, if any
+    if (sourceClass.getMetadata().hasSuperClass()) {
+        String superclass = sourceClass.getMetadata().getSuperClassName();
+        if (superclass != null && !superclass.startsWith("java") &&
+                !this.knownSuperclasses.containsKey(superclass)) {
+            this.knownSuperclasses.put(superclass, configClass);
+            // Superclass found, return its annotation metadata and recurse
+            return sourceClass.getSuperClass();
+        }
+    }
+
+    // No superclass -> processing is complete
+    return null;
+}
+```
+
+
+
+```java
+public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
+    ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
+            componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
+
+    Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
+    boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
+    scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
+            BeanUtils.instantiateClass(generatorClass));
+
+    ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
+    if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
+        scanner.setScopedProxyMode(scopedProxyMode);
+    }
+    else {
+        Class<? extends ScopeMetadataResolver> resolverClass = componentScan.getClass("scopeResolver");
+        scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
+    }
+
+    scanner.setResourcePattern(componentScan.getString("resourcePattern"));
+
+    for (AnnotationAttributes filter : componentScan.getAnnotationArray("includeFilters")) {
+        for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+            scanner.addIncludeFilter(typeFilter);
+        }
+    }
+    for (AnnotationAttributes filter : componentScan.getAnnotationArray("excludeFilters")) {
+        for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+            scanner.addExcludeFilter(typeFilter);
+        }
+    }
+
+    boolean lazyInit = componentScan.getBoolean("lazyInit");
+    if (lazyInit) {
+        scanner.getBeanDefinitionDefaults().setLazyInit(true);
+    }
+
+    Set<String> basePackages = new LinkedHashSet<>();
+    String[] basePackagesArray = componentScan.getStringArray("basePackages");
+    for (String pkg : basePackagesArray) {
+        String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
+                ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+        Collections.addAll(basePackages, tokenized);
+    }
+    for (Class<?> clazz : componentScan.getClassArray("basePackageClasses")) {
+        basePackages.add(ClassUtils.getPackageName(clazz));
+    }
+    if (basePackages.isEmpty()) {
+        basePackages.add(ClassUtils.getPackageName(declaringClass));
+    }
+
+    scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
+        @Override
+        protected boolean matchClassName(String className) {
+            return declaringClass.equals(className);
+        }
+    });
+    return scanner.doScan(StringUtils.toStringArray(basePackages));
+}
+```
+
+
+
+### 3.7 注册 Bean 后处理器
+
+
+
+### 3.8 初始化上下文的消息源
+
+
+
+### 3.9 初始化应用事件组播器
+
+
+
+### 3.10 初始化其他指定的bean
+
+
+
+### 3.11 注册监听器
+
+
+
+### 3.12 实例化所有的Bean
+
+```java
+protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
+    // Initialize conversion service for this context.
+    if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
+            beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
+        beanFactory.setConversionService(
+                beanFactory.getBean(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
+    }
+
+    // Register a default embedded value resolver if no bean post-processor
+    // (such as a PropertyPlaceholderConfigurer bean) registered any before:
+    // at this point, primarily for resolution in annotation attribute values.
+    if (!beanFactory.hasEmbeddedValueResolver()) {
+        beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
+    }
+
+    // Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+    String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
+    for (String weaverAwareName : weaverAwareNames) {
+        getBean(weaverAwareName);
+    }
+
+    // Stop using the temporary ClassLoader for type matching.
+    beanFactory.setTempClassLoader(null);
+
+    // Allow for caching all bean definition metadata, not expecting further changes.
+    beanFactory.freezeConfiguration();
+
+    // Instantiate all remaining (non-lazy-init) singletons.
+    beanFactory.preInstantiateSingletons();
+}
+
+@Override
+public void preInstantiateSingletons() throws BeansException {
+    if (logger.isTraceEnabled()) {
+        logger.trace("Pre-instantiating singletons in " + this);
+    }
+
+    // Iterate over a copy to allow for init methods which in turn register new bean definitions.
+    // While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+    List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
+
+    // Trigger initialization of all non-lazy singleton beans...
+    for (String beanName : beanNames) {
+        RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+        if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+            if (isFactoryBean(beanName)) {
+                Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
+                if (bean instanceof FactoryBean) {
+                    FactoryBean<?> factory = (FactoryBean<?>) bean;
+                    boolean isEagerInit;
+                    if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
+                        isEagerInit = AccessController.doPrivileged(
+                                (PrivilegedAction<Boolean>) ((SmartFactoryBean<?>) factory)::isEagerInit,
+                                getAccessControlContext());
+                    }
+                    else {
+                        isEagerInit = (factory instanceof SmartFactoryBean &&
+                                ((SmartFactoryBean<?>) factory).isEagerInit());
+                    }
+                    if (isEagerInit) {
+                        getBean(beanName);
+                    }
+                }
+            }
+            else {
+                getBean(beanName);
+            }
+        }
+    }
+
+    // Trigger post-initialization callback for all applicable beans...
+    for (String beanName : beanNames) {
+        Object singletonInstance = getSingleton(beanName);
+        if (singletonInstance instanceof SmartInitializingSingleton) {
+            SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
+            if (System.getSecurityManager() != null) {
+                AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+                    smartSingleton.afterSingletonsInstantiated();
+                    return null;
+                }, getAccessControlContext());
+            }
+            else {
+                smartSingleton.afterSingletonsInstantiated();
+            }
+        }
+    }
+}
 ```
 
 
@@ -964,6 +1764,14 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 ```
 
 
+
+
+
+## 附图
+
+![d5631d57649dc8f75e8571e6651c89e](C:\Users\shenqing\Documents\WeChat Files\wxid_hgi8laet7y8e22\FileStorage\Temp\d5631d57649dc8f75e8571e6651c89e.png)
+
+![7ec530def2d330bc5bba9f785b19d0e](C:\Users\shenqing\Documents\WeChat Files\wxid_hgi8laet7y8e22\FileStorage\Temp\7ec530def2d330bc5bba9f785b19d0e.png)
 
 
 

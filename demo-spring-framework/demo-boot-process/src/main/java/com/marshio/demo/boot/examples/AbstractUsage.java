@@ -11,12 +11,12 @@ public class AbstractUsage {
     // 这是因为双亲委派机制，子类对象的构造方法在调用父类构造方法之前，会先调用父类的构造方法。
     public static void main(String[] args) {
         ExtendsClass01 concreteClass = new ExtendsClass01();
-        concreteClass.refresh();
+        // concreteClass.refresh();
 
         // 分割线
         System.out.println("分割线");
 
-        ExtendsClass02 concreteClass2 = new ExtendsClass02();
+        // ExtendsClass02 concreteClass2 = new ExtendsClass02();
         // concreteClass2.abstractMethod();
 
         // System.out.println("分割线");
