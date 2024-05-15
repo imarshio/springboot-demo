@@ -4,7 +4,7 @@ import com.marshio.demo.boot.examples.ApplicationContextInitializerUsage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
+import org.springframework.context.annotation.ComponentScan;
 
 
 /**
@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @create 2024/2/2 18:23
  */
 @Slf4j
+@ComponentScan(basePackages = {"com.marshio.demo.boot.examples"})
 @SpringBootApplication
 public class BootProcessApplication {
 

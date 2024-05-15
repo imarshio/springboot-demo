@@ -406,6 +406,7 @@ public class AnnotationConfigServletWebServerApplicationContext extends ServletW
 #### 1.6.2 AnnotatedBeanDefinitionReader实例化过程
 
 ```java
+
 @SuppressWarnings("all")
 public class AnnotatedBeanDefinitionReader {
 
@@ -476,7 +477,7 @@ public static Set<BeanDefinitionHolder> registerAnnotationConfigProcessors(
             beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
         }
     }
-    
+
     // 声明一个存储bean定义的holder的集合，重要的不是这个beanDefs，而是再添加到这个集合前做的处理registerPostProcessor
     Set<BeanDefinitionHolder> beanDefs = new LinkedHashSet<>(8);
 
@@ -532,7 +533,7 @@ public static Set<BeanDefinitionHolder> registerAnnotationConfigProcessors(
 
 private static BeanDefinitionHolder registerPostProcessor(
         BeanDefinitionRegistry registry, RootBeanDefinition definition, String beanName) {
-	
+
     definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
     // 调用Bean注册器将BeanDef注册进去，容器管理
     registry.registerBeanDefinition(beanName, definition);
@@ -565,8 +566,7 @@ public void registerBeanDefinition(String beanName, BeanDefinition beanDefinitio
     if (beanDefinition instanceof AbstractBeanDefinition) {
         try {
             ((AbstractBeanDefinition) beanDefinition).validate();
-        }
-        catch (BeanDefinitionValidationException ex) {
+        } catch (BeanDefinitionValidationException ex) {
             throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
                     "Validation of bean definition failed", ex);
         }
@@ -579,23 +579,20 @@ public void registerBeanDefinition(String beanName, BeanDefinition beanDefinitio
         if (!isAllowBeanDefinitionOverriding()) {
             // 判断是否可以覆写
             throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
-        }
-        else if (existingDefinition.getRole() < beanDefinition.getRole()) {
+        } else if (existingDefinition.getRole() < beanDefinition.getRole()) {
             // e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
             if (logger.isInfoEnabled()) {
                 logger.info("Overriding user-defined bean definition for bean '" + beanName +
                         "' with a framework-generated bean definition: replacing [" +
                         existingDefinition + "] with [" + beanDefinition + "]");
             }
-        }
-        else if (!beanDefinition.equals(existingDefinition)) {
+        } else if (!beanDefinition.equals(existingDefinition)) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Overriding bean definition for bean '" + beanName +
                         "' with a different definition: replacing [" + existingDefinition +
                         "] with [" + beanDefinition + "]");
             }
-        }
-        else {
+        } else {
             if (logger.isTraceEnabled()) {
                 logger.trace("Overriding bean definition for bean '" + beanName +
                         "' with an equivalent definition: replacing [" + existingDefinition +
@@ -604,8 +601,7 @@ public void registerBeanDefinition(String beanName, BeanDefinition beanDefinitio
         }
         // 将bd放到map中
         this.beanDefinitionMap.put(beanName, beanDefinition);
-    }
-    else {
+    } else {
         // 不存在在map中
         if (hasBeanCreationStarted()) {
             // Cannot modify startup-time collection elements anymore (for stable iteration)
@@ -618,8 +614,7 @@ public void registerBeanDefinition(String beanName, BeanDefinition beanDefinitio
                 this.beanDefinitionNames = updatedDefinitions;
                 removeManualSingletonName(beanName);
             }
-        }
-        else {
+        } else {
             // Still in startup registration phase
             this.beanDefinitionMap.put(beanName, beanDefinition);
             this.beanDefinitionNames.add(beanName);
@@ -630,8 +625,7 @@ public void registerBeanDefinition(String beanName, BeanDefinition beanDefinitio
 
     if (existingDefinition != null || containsSingleton(beanName)) {
         resetBeanDefinition(beanName);
-    }
-    else if (isConfigurationFrozen()) {
+    } else if (isConfigurationFrozen()) {
         clearByTypeCache();
     }
 }
@@ -744,6 +738,7 @@ public interface ApplicationContextInitializer<C extends ConfigurableApplication
 补充，如何添加自实现的initializer
 
 ```java
+
 @Order(199)
 public class ApplicationContextInitializerUsage implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -789,6 +784,7 @@ public class BootProcessApplication {
 ## 3.1 刷新SpringBoot上下文 *重点*
 
 ```java
+
 @SuppressWarnings("all")
 public class SpringApplication {
     private void refreshContext(ConfigurableApplicationContext context) {
@@ -813,7 +809,7 @@ public class SpringApplication {
     protected void refresh(ConfigurableApplicationContext applicationContext) {
         applicationContext.refresh();
     }
-    
+
     // ... 深入digging
 }
 
@@ -826,107 +822,104 @@ public class SpringApplication {
 @SuppressWarnings("all")
 public abstract class AbstractApplicationContext extends DefaultResourceLoader
         implements ConfigurableApplicationContext {
-    
+
     @Override
     public void refresh() throws BeansException, IllegalStateException {
-      synchronized (this.startupShutdownMonitor) {
-        // Prepare this context for refreshing.
-        // 3.2 准备上下文刷新，即context
-        prepareRefresh();
-    
-        // Tell the subclass to refresh the internal bean factory.
-        // 3.3 获取beanFactory
-        ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
-    
-        // Prepare the bean factory for use in this context.
-        // 3.4 beanFactory的初始化
-        prepareBeanFactory(beanFactory);
-    
-        try {
-          // Allows post-processing of the bean factory in context subclasses.
-          // 3.5 beanFactory的前置处理
-          postProcessBeanFactory(beanFactory);
-    
-          // Invoke factory processors registered as beans in the context.
-          // 3.6 调用
-          invokeBeanFactoryPostProcessors(beanFactory);
-    
-          // Register bean processors that intercept bean creation.
-          // 3.7 注册 Bean 后处理器
-          registerBeanPostProcessors(beanFactory);
-    
-          // Initialize message source for this context.
-          // 3.8 初始化上下文的消息源
-          initMessageSource();
-    
-          // Initialize event multicaster for this context.
-          // 3.9 初始化应用事件组播器
-          initApplicationEventMulticaster();
-    
-          // Initialize other special beans in specific context subclasses.
-          // 3.10 初始化其他指定的bean
-          onRefresh();
-    
-          // Check for listener beans and register them.
-          // 3.11 注册监听器
-          registerListeners();
-    
-          // Instantiate all remaining (non-lazy-init) singletons.
-          // 3.12 实例化所有的Bean
-          finishBeanFactoryInitialization(beanFactory);
-    
-          // Last step: publish corresponding event.
-          // 3.13 发送完成刷新的消息
-          finishRefresh();
+        synchronized (this.startupShutdownMonitor) {
+            // Prepare this context for refreshing.
+            // 3.2 准备上下文刷新，即context
+            prepareRefresh();
+
+            // Tell the subclass to refresh the internal bean factory.
+            // 3.3 获取beanFactory
+            ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+            // Prepare the bean factory for use in this context.
+            // 3.4 beanFactory的初始化
+            prepareBeanFactory(beanFactory);
+
+            try {
+                // Allows post-processing of the bean factory in context subclasses.
+                // 3.5 beanFactory的前置处理
+                postProcessBeanFactory(beanFactory);
+
+                // Invoke factory processors registered as beans in the context.
+                // 3.6 调用
+                invokeBeanFactoryPostProcessors(beanFactory);
+
+                // Register bean processors that intercept bean creation.
+                // 3.7 注册 Bean 后处理器
+                registerBeanPostProcessors(beanFactory);
+
+                // Initialize message source for this context.
+                // 3.8 初始化上下文的消息源
+                initMessageSource();
+
+                // Initialize event multicaster for this context.
+                // 3.9 初始化应用事件组播器
+                initApplicationEventMulticaster();
+
+                // Initialize other special beans in specific context subclasses.
+                // 3.10 初始化其他指定的bean
+                onRefresh();
+
+                // Check for listener beans and register them.
+                // 3.11 注册监听器
+                registerListeners();
+
+                // Instantiate all remaining (non-lazy-init) singletons.
+                // 3.12 实例化所有的Bean
+                finishBeanFactoryInitialization(beanFactory);
+
+                // Last step: publish corresponding event.
+                // 3.13 发送完成刷新的消息
+                finishRefresh();
+            } catch (BeansException ex) {
+                if (logger.isWarnEnabled()) {
+                    logger.warn("Exception encountered during context initialization - " +
+                            "cancelling refresh attempt: " + ex);
+                }
+
+                // Destroy already created singletons to avoid dangling resources.
+                destroyBeans();
+
+                // Reset 'active' flag.
+                cancelRefresh(ex);
+
+                // Propagate exception to caller.
+                throw ex;
+            } finally {
+                // Reset common introspection caches in Spring's core, since we
+                // might not ever need metadata for singleton beans anymore...
+                // 重置通用缓存
+                resetCommonCaches();
+            }
         }
-    
-        catch (BeansException ex) {
-          if (logger.isWarnEnabled()) {
-            logger.warn("Exception encountered during context initialization - " +
-                    "cancelling refresh attempt: " + ex);
-          }
-    
-          // Destroy already created singletons to avoid dangling resources.
-          destroyBeans();
-    
-          // Reset 'active' flag.
-          cancelRefresh(ex);
-    
-          // Propagate exception to caller.
-          throw ex;
-        }
-    
-        finally {
-          // Reset common introspection caches in Spring's core, since we
-          // might not ever need metadata for singleton beans anymore...
-          // 重置通用缓存
-          resetCommonCaches();
-        }
-      }
     }
-    
+
     protected void finishRefresh() {
-      // Clear context-level resource caches (such as ASM metadata from scanning).
-      clearResourceCaches();
-  
-      // Initialize lifecycle processor for this context.
-      initLifecycleProcessor();
-  
-      // Propagate refresh to lifecycle processor first.
-      getLifecycleProcessor().onRefresh();
-  
-      // Publish the final event.
-      publishEvent(new ContextRefreshedEvent(this));
-  
-      // Participate in LiveBeansView MBean, if active.
-      LiveBeansView.registerApplicationContext(this);
-	}
+        // Clear context-level resource caches (such as ASM metadata from scanning).
+        clearResourceCaches();
+
+        // Initialize lifecycle processor for this context.
+        initLifecycleProcessor();
+
+        // Propagate refresh to lifecycle processor first.
+        getLifecycleProcessor().onRefresh();
+
+        // Publish the final event.
+        publishEvent(new ContextRefreshedEvent(this));
+
+        // Participate in LiveBeansView MBean, if active.
+        LiveBeansView.registerApplicationContext(this);
+    }
 }
 ```
 
 ### 3.2 准备上下文刷新
 
 ```java
+
 @SuppressWarnings("all")
 protected void prepareRefresh() {
     // Switch to active.
@@ -937,8 +930,7 @@ protected void prepareRefresh() {
     if (logger.isDebugEnabled()) {
         if (logger.isTraceEnabled()) {
             logger.trace("Refreshing " + this);
-        }
-        else {
+        } else {
             logger.debug("Refreshing " + getDisplayName());
         }
     }
@@ -955,8 +947,7 @@ protected void prepareRefresh() {
     // Store pre-refresh ApplicationListeners...
     if (this.earlyApplicationListeners == null) {
         this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
-    }
-    else {
+    } else {
         // Reset local application listeners to pre-refresh state.
         this.applicationListeners.clear();
         this.applicationListeners.addAll(this.earlyApplicationListeners);
@@ -973,6 +964,7 @@ protected void prepareRefresh() {
 其实这里获取到beanFactory就是context声明的时候创建的beanFactory。
 
 ```java
+
 @SuppressWarnings("all")
 protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
     refreshBeanFactory();
@@ -1002,27 +994,27 @@ public GenericApplicationContext() {
 }
 
 public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory
-		implements ConfigurableListableBeanFactory, BeanDefinitionRegistry, Serializable {
-    
+        implements ConfigurableListableBeanFactory, BeanDefinitionRegistry, Serializable {
+
     public DefaultListableBeanFactory() {
         super();
-	}
+    }
 }
 
 public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFactory
-		implements AutowireCapableBeanFactory {
-    
-	public AbstractAutowireCapableBeanFactory() {
-		super();
-		ignoreDependencyInterface(BeanNameAware.class);
-		ignoreDependencyInterface(BeanFactoryAware.class);
-		ignoreDependencyInterface(BeanClassLoaderAware.class);
-	}
+        implements AutowireCapableBeanFactory {
+
+    public AbstractAutowireCapableBeanFactory() {
+        super();
+        ignoreDependencyInterface(BeanNameAware.class);
+        ignoreDependencyInterface(BeanFactoryAware.class);
+        ignoreDependencyInterface(BeanClassLoaderAware.class);
+    }
 }
 
 public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory {
-	public AbstractBeanFactory() {
-	}
+    public AbstractBeanFactory() {
+    }
 }
 
 // 每个类都有很多的变量在实例化的时候被初始化
@@ -1079,8 +1071,6 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 }
 ```
 
-
-
 ### 3.5 beanFactory的前置处理
 
 ```java
@@ -1113,16 +1103,14 @@ protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactor
 }
 ```
 
-
-
-### 3.6 引用BeanFactory后置处理
+### 3.6 调用BeanFactory后置处理
 
 这里会从注解和配置文件加载 BeanDefinition
 
 ```java
 
 protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
-    
+    // 调用静态方法
     PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
     // Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
@@ -1137,6 +1125,7 @@ public static void invokeBeanFactoryPostProcessors(
         ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
 
     // Invoke BeanDefinitionRegistryPostProcessors first, if any.
+    // 如果存在 BeanDefinitionRegistryPostProcessors 就调用
     Set<String> processedBeans = new HashSet<>();
 
     if (beanFactory instanceof BeanDefinitionRegistry) {
@@ -1144,14 +1133,16 @@ public static void invokeBeanFactoryPostProcessors(
         List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
         List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
 
+        // beanFactoryPostProcessors 是一个由beanFactoryPostProcessor组成的数组
         for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
             if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
                 BeanDefinitionRegistryPostProcessor registryProcessor =
                         (BeanDefinitionRegistryPostProcessor) postProcessor;
+                // 这里调用了BeanDefinitionRegistryPostProcessor的方法，我们深入
+                // 接 3.6.1 postProcessBeanDefinitionRegistry
                 registryProcessor.postProcessBeanDefinitionRegistry(registry);
                 registryProcessors.add(registryProcessor);
-            }
-            else {
+            } else {
                 regularPostProcessors.add(postProcessor);
             }
         }
@@ -1173,6 +1164,9 @@ public static void invokeBeanFactoryPostProcessors(
         }
         sortPostProcessors(currentRegistryProcessors, beanFactory);
         registryProcessors.addAll(currentRegistryProcessors);
+        // 一直到这里，上面的代码暂时没有很重要的
+        // ！！！
+        // 3.6.2 
         invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
         currentRegistryProcessors.clear();
 
@@ -1210,9 +1204,7 @@ public static void invokeBeanFactoryPostProcessors(
         // Now, invoke the postProcessBeanFactory callback of all processors handled so far.
         invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
         invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
-    }
-
-    else {
+    } else {
         // Invoke factory processors registered with the context instance.
         invokeBeanFactoryPostProcessors(beanFactoryPostProcessors, beanFactory);
     }
@@ -1230,14 +1222,11 @@ public static void invokeBeanFactoryPostProcessors(
     for (String ppName : postProcessorNames) {
         if (processedBeans.contains(ppName)) {
             // skip - already processed in first phase above
-        }
-        else if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+        } else if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
             priorityOrderedPostProcessors.add(beanFactory.getBean(ppName, BeanFactoryPostProcessor.class));
-        }
-        else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+        } else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
             orderedPostProcessorNames.add(ppName);
-        }
-        else {
+        } else {
             nonOrderedPostProcessorNames.add(ppName);
         }
     }
@@ -1266,36 +1255,109 @@ public static void invokeBeanFactoryPostProcessors(
     beanFactory.clearMetadataCache();
 }
 
+```
+
+#### 3.6.1 postProcessBeanDefinitionRegistry
+
+```java
+public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+    // 具体内容看 Ⅰ
+    this.register(registry);
+    // 具体内容看 Ⅱ
+    this.configureConfigurationClassPostProcessor(registry);
+}
+
+// Ⅰ
+private void register(BeanDefinitionRegistry registry) {
+    // 声明了一个BeanDefinition
+    BeanDefinition definition = BeanDefinitionBuilder.genericBeanDefinition(SharedMetadataReaderFactoryBean.class, SharedMetadataReaderFactoryBean::new).getBeanDefinition();
+    // 将他注册到容器内
+    registry.registerBeanDefinition("org.springframework.boot.autoconfigure.internalCachingMetadataReaderFactory", definition);
+}
+
+// Ⅱ
+private void configureConfigurationClassPostProcessor(BeanDefinitionRegistry registry) {
+    try {
+        BeanDefinition definition = registry.getBeanDefinition("org.springframework.context.annotation.internalConfigurationAnnotationProcessor");
+        definition.getPropertyValues().add("metadataReaderFactory", new RuntimeBeanReference("org.springframework.boot.autoconfigure.internalCachingMetadataReaderFactory"));
+    } catch (NoSuchBeanDefinitionException var3) {
+    }
+
+}
+```
+
+> [!Note]
+>
+> 我们需要先了解下 BeanDefinitionRegistryPostProcessor 的作用，他其实就是一个Function call。
+>
+> ```java
+> public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor {
+> 
+> 	/**
+> 	 * Modify the application context's internal bean definition registry after its
+> 	 * standard initialization. All regular bean definitions will have been loaded,
+> 	 * but no beans will have been instantiated yet. This allows for adding further
+> 	 * bean definitions before the next post-processing phase kicks in.
+> 	 * @param registry the bean definition registry used by the application context
+> 	 * @throws org.springframework.beans.BeansException in case of errors
+> 	 */
+> 	void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
+> 
+> }
+> 
+> // 继承于
+> @FunctionalInterface
+> public interface BeanFactoryPostProcessor {
+> 
+> 	/**
+> 	 * Modify the application context's internal bean factory after its standard
+> 	 * initialization. All bean definitions will have been loaded, but no beans
+> 	 * will have been instantiated yet. This allows for overriding or adding
+> 	 * properties even to eager-initializing beans.
+> 	 * @param beanFactory the bean factory used by the application context
+> 	 * @throws org.springframework.beans.BeansException in case of errors
+> 	 */
+> 	void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
+> 
+> }
+> ```
+>
+
+#### 3.6.2 invokeBeanDefinitionRegistryPostProcessors
+
+```java
 private static void invokeBeanDefinitionRegistryPostProcessors(
         Collection<? extends BeanDefinitionRegistryPostProcessor> postProcessors, BeanDefinitionRegistry registry) {
 
     for (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) {
+        // 还是上面提到的function call
         postProcessor.postProcessBeanDefinitionRegistry(registry);
     }
 }
-```
 
-
-
-```java
-@Override
-public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
-    int registryId = System.identityHashCode(registry);
-    if (this.registriesPostProcessed.contains(registryId)) {
-        throw new IllegalStateException(
-                "postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
-    }
-    if (this.factoriesPostProcessed.contains(registryId)) {
-        throw new IllegalStateException(
-                "postProcessBeanFactory already called on this post-processor against " + registry);
-    }
-    this.registriesPostProcessed.add(registryId);
-
-    (registry);
+public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor,
+		PriorityOrdered, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
+	@Override
+	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+		int registryId = System.identityHashCode(registry);
+		if (this.registriesPostProcessed.contains(registryId)) {
+			throw new IllegalStateException(
+					"postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
+		}
+		if (this.factoriesPostProcessed.contains(registryId)) {
+			throw new IllegalStateException(
+					"postProcessBeanFactory already called on this post-processor against " + registry);
+		}
+		this.registriesPostProcessed.add(registryId);
+		// 关键代码
+		processConfigBeanDefinitions(registry);
+	}
 }
+
 
 public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
     List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+    // 候选
     String[] candidateNames = registry.getBeanDefinitionNames();
 
     for (String beanName : candidateNames) {
@@ -1304,8 +1366,7 @@ public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
             }
-        }
-        else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+        } else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
             configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
         }
     }
@@ -1348,6 +1409,7 @@ public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
     Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
     Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
     do {
+        // 解析 3.6.3 parse
         parser.parse(candidates);
         parser.validate();
 
@@ -1399,11 +1461,7 @@ public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
 
 ```
 
-
-
-
-
-### 3.6.  处理配置类
+#### 3.6.3 parse
 
 ```java
 public void parse(Set<BeanDefinitionHolder> configCandidates) {
@@ -1412,18 +1470,14 @@ public void parse(Set<BeanDefinitionHolder> configCandidates) {
         try {
             if (bd instanceof AnnotatedBeanDefinition) {
                 parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());
-            }
-            else if (bd instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) bd).hasBeanClass()) {
+            } else if (bd instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) bd).hasBeanClass()) {
                 parse(((AbstractBeanDefinition) bd).getBeanClass(), holder.getBeanName());
-            }
-            else {
+            } else {
                 parse(bd.getBeanClassName(), holder.getBeanName());
             }
-        }
-        catch (BeanDefinitionStoreException ex) {
+        } catch (BeanDefinitionStoreException ex) {
             throw ex;
-        }
-        catch (Throwable ex) {
+        } catch (Throwable ex) {
             throw new BeanDefinitionStoreException(
                     "Failed to parse configuration class [" + bd.getBeanClassName() + "]", ex);
         }
@@ -1449,8 +1503,7 @@ protected void processConfigurationClass(ConfigurationClass configClass, Predica
             }
             // Otherwise ignore new imported config class; existing non-imported class overrides it.
             return;
-        }
-        else {
+        } else {
             // Explicit bean definition found, probably replacing an import.
             // Let's remove the old one and go with the new one.
             this.configurationClasses.remove(configClass);
@@ -1461,6 +1514,7 @@ protected void processConfigurationClass(ConfigurationClass configClass, Predica
     // Recursively process the configuration class and its superclass hierarchy.
     SourceClass sourceClass = asSourceClass(configClass, filter);
     do {
+        // 3.6.4 doProcessConfigurationClass
         sourceClass = doProcessConfigurationClass(configClass, sourceClass, filter);
     }
     while (sourceClass != null);
@@ -1469,39 +1523,39 @@ protected void processConfigurationClass(ConfigurationClass configClass, Predica
 }
 ```
 
+#### 3.6.4 doProcessConfigurationClass
 
-
-
-
-### 3.6. 扫描注解
-
-就是这里
+就是这里对主类进行了加载
 
 ```java
+
 @Nullable
+@SuppressWarnings("all")
 protected final SourceClass doProcessConfigurationClass(
         ConfigurationClass configClass, SourceClass sourceClass, Predicate<String> filter)
         throws IOException {
 
     if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
         // Recursively process any member (nested) classes first
+        // 先处理成员类，即依赖参数
         processMemberClasses(configClass, sourceClass, filter);
     }
 
+    // 解析携带PropertySource的注解的类
     // Process any @PropertySource annotations
     for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
             sourceClass.getMetadata(), PropertySources.class,
             org.springframework.context.annotation.PropertySource.class)) {
         if (this.environment instanceof ConfigurableEnvironment) {
             processPropertySource(propertySource);
-        }
-        else {
+        } else {
             logger.info("Ignoring @PropertySource annotation on [" + sourceClass.getMetadata().getClassName() +
                     "]. Reason: Environment must implement ConfigurableEnvironment");
         }
     }
 
     // Process any @ComponentScan annotations
+    // 处理ComponentScan注解
     Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
             sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
     if (!componentScans.isEmpty() &&
@@ -1509,6 +1563,7 @@ protected final SourceClass doProcessConfigurationClass(
         for (AnnotationAttributes componentScan : componentScans) {
             // The config class is annotated with @ComponentScan -> perform the scan immediately
             Set<BeanDefinitionHolder> scannedBeanDefinitions =
+                	// 解析
                     this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
             // Check the set of scanned definitions for any further config classes and parse recursively if needed
             for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
@@ -1563,8 +1618,6 @@ protected final SourceClass doProcessConfigurationClass(
 }
 ```
 
-
-
 ```java
 public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
     ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
@@ -1578,8 +1631,7 @@ public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final
     ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
     if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
         scanner.setScopedProxyMode(scopedProxyMode);
-    }
-    else {
+    } else {
         Class<? extends ScopeMetadataResolver> resolverClass = componentScan.getClass("scopeResolver");
         scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
     }
@@ -1622,31 +1674,55 @@ public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final
             return declaringClass.equals(className);
         }
     });
+    // 
     return scanner.doScan(StringUtils.toStringArray(basePackages));
+}
+```
+
+根据注解扫描到需要被注入到容器中的bean
+
+```java
+protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
+    Assert.notEmpty(basePackages, "At least one base package must be specified");
+    Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
+    for (String basePackage : basePackages) {
+        Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+        for (BeanDefinition candidate : candidates) {
+            ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
+            candidate.setScope(scopeMetadata.getScopeName());
+            String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+            if (candidate instanceof AbstractBeanDefinition) {
+                postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
+            }
+            if (candidate instanceof AnnotatedBeanDefinition) {
+                AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
+            }
+            if (checkCandidate(beanName, candidate)) {
+                BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+                definitionHolder =
+                        AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+                beanDefinitions.add(definitionHolder);
+                registerBeanDefinition(definitionHolder, this.registry);
+            }
+        }
+    }
+    return beanDefinitions;
 }
 ```
 
 
 
+
+
 ### 3.7 注册 Bean 后处理器
-
-
 
 ### 3.8 初始化上下文的消息源
 
-
-
 ### 3.9 初始化应用事件组播器
-
-
 
 ### 3.10 初始化其他指定的bean
 
-
-
 ### 3.11 注册监听器
-
-
 
 ### 3.12 实例化所有的Bean
 
@@ -1705,8 +1781,7 @@ public void preInstantiateSingletons() throws BeansException {
                         isEagerInit = AccessController.doPrivileged(
                                 (PrivilegedAction<Boolean>) ((SmartFactoryBean<?>) factory)::isEagerInit,
                                 getAccessControlContext());
-                    }
-                    else {
+                    } else {
                         isEagerInit = (factory instanceof SmartFactoryBean &&
                                 ((SmartFactoryBean<?>) factory).isEagerInit());
                     }
@@ -1714,8 +1789,7 @@ public void preInstantiateSingletons() throws BeansException {
                         getBean(beanName);
                     }
                 }
-            }
-            else {
+            } else {
                 getBean(beanName);
             }
         }
@@ -1731,8 +1805,7 @@ public void preInstantiateSingletons() throws BeansException {
                     smartSingleton.afterSingletonsInstantiated();
                     return null;
                 }, getAccessControlContext());
-            }
-            else {
+            } else {
                 smartSingleton.afterSingletonsInstantiated();
             }
         }
@@ -1740,32 +1813,24 @@ public void preInstantiateSingletons() throws BeansException {
 }
 ```
 
-
-
-
-
 ## 4.1 运行SpringBoot上下文 *重点*
 
 ```java
-	private void callRunners(ApplicationContext context, ApplicationArguments args) {
-		List<Object> runners = new ArrayList<>();
-		runners.addAll(context.getBeansOfType(ApplicationRunner.class).values());
-		runners.addAll(context.getBeansOfType(CommandLineRunner.class).values());
-		AnnotationAwareOrderComparator.sort(runners);
-		for (Object runner : new LinkedHashSet<>(runners)) {
-			if (runner instanceof ApplicationRunner) {
-				callRunner((ApplicationRunner) runner, args);
-			}
-			if (runner instanceof CommandLineRunner) {
-				callRunner((CommandLineRunner) runner, args);
-			}
-		}
-	}
+    private void callRunners(ApplicationContext context, ApplicationArguments args) {
+    List<Object> runners = new ArrayList<>();
+    runners.addAll(context.getBeansOfType(ApplicationRunner.class).values());
+    runners.addAll(context.getBeansOfType(CommandLineRunner.class).values());
+    AnnotationAwareOrderComparator.sort(runners);
+    for (Object runner : new LinkedHashSet<>(runners)) {
+        if (runner instanceof ApplicationRunner) {
+            callRunner((ApplicationRunner) runner, args);
+        }
+        if (runner instanceof CommandLineRunner) {
+            callRunner((CommandLineRunner) runner, args);
+        }
+    }
+}
 ```
-
-
-
-
 
 ## 附图
 
@@ -1838,7 +1903,10 @@ SpEL表达式的结构丰富多样，可以执行以下操作：
 ### 常见的表达式引擎
 
 - MVEL (MVFLEX Expression Language)：是一个独立的开源项目，它提供了一个轻量级且功能丰富的运行时表达式引擎，可在Java应用中进行复杂的表达式求值。
-- Aviator是一个高性能、轻量级的Java表达式求值引擎，它允许在Java应用中进行简单的数学和逻辑表达式的计算，尤其适合于动态生成或处理SQL查询语句等场景。https://github.com/killme2008/aviatorscript
+-
+
+Aviator是一个高性能、轻量级的Java表达式求值引擎，它允许在Java应用中进行简单的数学和逻辑表达式的计算，尤其适合于动态生成或处理SQL查询语句等场景。https://github.com/killme2008/aviatorscript
+
 - OGNL (Object-Graph Navigation Language)：主要用于Apache Struts框架和一些其他Java库，用于获取和设置Java对象的属性以及调用方法。
 - JEXL (Java Expression Language)：来自Apache Commons项目，也是一个轻量级的、可嵌入的表达式语言，能够执行简单的到较为复杂的表达式。
 - JavaScript scripting in Java：通过javax.script包（即JSR 223: Scripting for the Java
@@ -1846,7 +1914,8 @@ SpEL表达式的结构丰富多样，可以执行以下操作：
 - Groovy expressions: Groovy作为一种与Java高度兼容的编程语言，其表达式可以在Java应用程序中被当作脚本语言来执行
 - Janino：一个纯Java编写的类文件生成器和轻量级的脚本引擎，可以将Java代码作为字符串编译并执行。
 - JEP (Java Mathematical Expression Parser)：一个用Java编写的数学表达式解析器，它可以解析和评估包含变量、函数和操作符的数学表达式。
-- EL (Expression Language)：在Java EE环境中广泛使用的标准表达式语言，用于在JSP、JSF等技术中动态插入或修改内容。它也可以通过javax.el.*包在非Web应用中使用。
+- EL (Expression Language)：在Java
+  EE环境中广泛使用的标准表达式语言，用于在JSP、JSF等技术中动态插入或修改内容。它也可以通过javax.el.*包在非Web应用中使用。
 - Velocity Templating Engine 和 FreeMarker：虽然主要作为模板引擎使用，但它们同样支持在模板中编写表达式以进行简单的逻辑判断和数据操作。
 
 ### 案例
