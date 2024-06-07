@@ -1,9 +1,13 @@
 server:
-  port: 8080
+  port: 18888
 
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: 123456
-    url: jdbc:mysql://localhost:3306/testMyBatisPlus?useUnicode=true&characterEncoding=utf8
+    username: demo
+    password: T&UY9QdNDScZ
+    # 各个参数的含义
+    # useUnicode：使用Unicode字符集进行通信
+    # characterEncoding：字符串数据以UTF-8编码进行传
+    # serverTimezone：服务器的时区设定为亚洲上海时区，以匹配应用程序的预期时区设置。
+    url: jdbc:mysql://106.15.104.240:3306/testMyBatisPlus?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai

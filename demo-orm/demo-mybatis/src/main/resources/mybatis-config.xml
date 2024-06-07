@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+<!-- 该配置文件可要可不要，但是mybatis会优先读取该配置文件 -->
+    <mappers>
+        <!-- 除了使用mapper-locations配置外，还可以在mappers 标签中配置mapper文件位置 -->
+        <mapper resource="mapper/UserMapper.xml"/>
+        
+        <!-- <package name="mapper"/> -->
+    </mappers>
+</configuration>
