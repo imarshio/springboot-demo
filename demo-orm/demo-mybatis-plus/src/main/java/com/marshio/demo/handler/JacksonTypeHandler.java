@@ -1,4 +1,4 @@
-package com.marshio.demo.mybatis.handler;
+package com.marshio.demo.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.marshio.demo.config.JacksonConfig;
