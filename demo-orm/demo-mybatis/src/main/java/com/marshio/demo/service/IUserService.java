@@ -1,7 +1,6 @@
 package com.marshio.demo.service;
 
 import com.marshio.demo.domain.entity.User;
-import com.marshio.demo.domain.vo.UserVO;
 
 import java.util.List;
 

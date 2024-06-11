@@ -1,5 +1,6 @@
 package com.marshio.demo.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.marshio.demo.domain.entity.User;
 import com.marshio.demo.mapper.UserMapper;
 import com.marshio.demo.service.IUserService;
@@ -15,17 +16,10 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements IUserService {
-
-    private final UserMapper userMapper;
-
-    @Override
-    public User getUserById(Integer id) {
-        return userMapper.selectByPrimaryKey(id);
-    }
-
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService{
     @Override
     public List<User> getAllUser() {
-        return userMapper.selectAll();
+        return this.list();
     }
+
 }

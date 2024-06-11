@@ -37,3 +37,16 @@ mybatis-plus:
     db-config:
       # 数据库配置
       id-type: auto
+
+# p6spy SQL 打印配置
+decorator:
+  datasource:
+    p6spy:
+      # 日志格式
+      log-format: "\ntime:%(executionTime) || sql:%(sql)\n"
+      # 自定义日志类
+#      logging: custom
+#      custom-appender-class: com.p6spy.engine.spy.appender.StdoutLogger
+
+jackson:
+  module:

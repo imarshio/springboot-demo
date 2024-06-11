@@ -1,6 +1,10 @@
 package com.marshio.demo.domain.entity;
 
-import com.baomidou.mybatisplus.extension.activerecord.Model;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.marshio.demo.domain.enums.Gender;
 import lombok.Data;
 
 import java.util.Date;
@@ -10,7 +14,10 @@ import java.util.List;
  * mybatis 不支持@Table注解
  */
 @Data
+@TableName(value = "user", autoResultMap = true)
 public class User {
+
+    @TableId
     private Integer id;
 
     private String username;
@@ -29,8 +36,15 @@ public class User {
 
     private Boolean isActive;
 
-    private String gender;
+    private Gender gender;
 
+    /**
+     * 必须开启映射注解
+     *
+     * <p> @TableName(autoResultMap = true) <p>
+     * 选择对应的 JSON 处理器，并确保存在对应的 JSON 解析依赖包
+     */
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<Integer> role;
 
     private String intro;

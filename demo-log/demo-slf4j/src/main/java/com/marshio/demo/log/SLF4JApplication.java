@@ -17,5 +17,8 @@ public class SLF4JApplication {
 
         // logger.
         logger.debug("Hello World");
+        logger.info("Hello World");
+        logger.warn("Hello World");
+        logger.error("Hello World");
     }
 }

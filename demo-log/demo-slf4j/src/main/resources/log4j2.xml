@@ -6,10 +6,10 @@
         </Console>
     </Appenders>
 
-    <Loggers>
-        <!-- 指定Root日志输出级别 -->
-        <Root level="DEBUG">
-            <AppenderRef ref="Console"/>
-        </Root>
-    </Loggers>
+    <!-- <Loggers> -->
+    <!--     &lt;!&ndash; 指定Root日志输出级别 &ndash;&gt; -->
+    <!--     <Root level="DEBUG"> -->
+    <!--         <AppenderRef ref="Console"/> -->
+    <!--     </Root> -->
+    <!-- </Loggers> -->
 </Configuration>

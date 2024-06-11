@@ -25,7 +25,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public UserVO getUserById(@PathVariable Integer id) {
-        return UserConverter.INSTANCE.toVO(userService.getUserById(id));
+        return UserConverter.INSTANCE.toVO(userService.getById(id));
     }
 
     @RequestMapping("/list")
