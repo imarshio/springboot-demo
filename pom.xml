@@ -15,6 +15,7 @@
         <module>demo-json</module>
         <module>demo-spring-framework</module>
         <module>demo-elasticsearch</module>
+        <module>demo-tool</module>
     </modules>
 
     <parent>
