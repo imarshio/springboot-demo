@@ -12,9 +12,7 @@
     <artifactId>demo-api-doc</artifactId>
 
     <modules>
-        <module>demo-swagger-v1</module>
-        <module>demo-swagger-v2</module>
-        <module>demo-swagger-v3</module>
+        <module>demo-swagger</module>
     </modules>
 
     <properties>
@@ -41,20 +39,24 @@
             <!-- knife4j -->
             <!-- https://blog.csdn.net/weixin_66490956/article/details/128335294 -->
             <!-- https://blog.csdn.net/qq_42495847/article/details/121424389 -->
-            <!--swagger依赖-->
-            <dependency>
-                <groupId>io.springfox</groupId>
-                <artifactId>springfox-swagger2</artifactId>
-                <version>2.9.2</version>
-            </dependency>
-            <!--swagger ui-->
-            <dependency>
-                <groupId>io.springfox</groupId>
-                <artifactId>springfox-swagger-ui</artifactId>
-                <version>2.9.2</version>
-            </dependency>
 
         </dependencies>
     </dependencyManagement>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+    </dependencies>
 </project>

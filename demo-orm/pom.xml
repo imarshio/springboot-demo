@@ -14,7 +14,7 @@
         <module>demo-mybatis</module>
         <module>demo-mybatis-plus</module>
         <module>demo-jdbc-template</module>
-        <module>dem-jdbc</module>
+        <module>demo-jdbc</module>
     </modules>
 
     <packaging>pom</packaging>

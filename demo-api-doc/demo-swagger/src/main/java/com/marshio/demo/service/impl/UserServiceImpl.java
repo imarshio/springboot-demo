@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+
 /**
  * @author marshio
  * @desc ...
@@ -17,9 +18,19 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
+
+    @Override
+    public User getUserById(Integer id) {
+        return this.getById(id);
+    }
+
     @Override
     public List<User> getAllUser() {
         return this.list();
     }
 
+    @Override
+    public Boolean addUser(User entity) {
+        return this.save(entity);
+    }
 }
