@@ -29,6 +29,7 @@ import java.util.List;
 
 @Service
 public class DocEsService extends BaseEsService<Doc, String> {
+
     public DocEsService(ElasticsearchRepository<Doc, String> elasticsearchRepository,
                         RestHighLevelClient restHighLevelClient,
                         ElasticsearchProperties properties) {

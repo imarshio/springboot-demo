@@ -9,9 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @desc ...
  * @create 2024/6/7 11:19
  */
-@MapperScan({
-        "com.marshio.demo.mapper",
-})
+
 @SpringBootApplication
 public class SwaggerApplication {
 

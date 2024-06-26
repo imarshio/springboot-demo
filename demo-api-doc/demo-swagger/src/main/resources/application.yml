@@ -4,14 +4,15 @@ server:
 
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
     username: mybatis
     password: 3jq^edM#nW5J
     # 各个参数的含义
     # useUnicode：使用Unicode字符集进行通信
     # characterEncoding：字符串数据以UTF-8编码进行传
     # serverTimezone：服务器的时区设定为亚洲上海时区，以匹配应用程序的预期时区设置。
-    url: jdbc:mysql://106.15.104.240:3306/mybatis?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: jdbc:p6spy:mysql://106.15.104.240:3306/mybatis?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     # 配置连接池，MySQL数据库默认支持2000个数据连接
     hikari:
       # 测试连接是否可用
@@ -38,15 +39,23 @@ mybatis-plus:
       # 数据库配置
       id-type: auto
 
-# p6spy SQL 打印配置
-decorator:
-  datasource:
-    p6spy:
-      # 日志格式
-      log-format: "\ntime:%(executionTime) || sql:%(sql)\n"
-      # 自定义日志类
-#      logging: custom
-#      custom-appender-class: com.p6spy.engine.spy.appender.StdoutLogger
+p6spy:
+  config:
+    logMessageFormat: com.baomidou.mybatisplus.extension.p6spy.P6SpyLogger
+    moduleList: com.baomidou.mybatisplus.extension.p6spy.MybatisPlusLogFactory,com.p6spy.engine.outage.P6OutageFactory
+    appender: com.p6spy.engine.spy.appender.Slf4JLogger
+    deregisterDrivers: true
+    usePrefix: true
+    excludeCategories: info,debug,result,commit,resultset
 
-jackson:
-  module:
+#decorator:
+#  datasource:
+#    p6spy:
+#      # 日志格式
+##      log-format: "\ntime:%(executionTime) || sql:%(sql)\n"
+#      # 自定义日志类
+#      logging: slf4j
+##      custom-appender-class: com.example.testinit.config.StdoutLogger
+
+#jackson:
+#  module:
