@@ -16,6 +16,7 @@
         <module>demo-spring-framework</module>
         <module>demo-elasticsearch</module>
         <module>demo-tool</module>
+        <module>demo-orm/demo-dynamic-datasource</module>
     </modules>
 
     <parent>

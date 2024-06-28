@@ -6,7 +6,9 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SpELApplication {
@@ -17,13 +19,15 @@ public class SpELApplication {
 
         // map 数据准备
         Map<String, Object> map = new HashMap<>();
-        map.put("data", "<p>2021年11月，据《证券时报》报道，中国证监会发布《关于推动提高上市公司质量的意见》，旨在提升A股市场板块质量。</p>");
+        map.put("title", "<p>2021年11月，据《证券时报》报道，中国证监会发布《关于推动提高上市公司质量的意见》，旨在提升A股市场板块质量。</p>");
         map.put("code", 200);
         map.put("msg", "success");
+        List<Map<String, Object>> list = new ArrayList<>();
+        list.add(map);
 
         EvaluationContext context = new StandardEvaluationContext();
-        context.setVariable("map", map);
+        context.setVariable("input", list);
 
-        System.out.println(parser.parseExpression("#map['data']").getValue(context));
+        System.out.println(parser.parseExpression(" #input[1]['title']").getValue(context));
     }
 }

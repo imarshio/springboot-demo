@@ -32,7 +32,9 @@
         <dependency>
             <groupId>com.github.gavlyukovskiy</groupId>
             <artifactId>p6spy-spring-boot-starter</artifactId>
-            <version>1.9.1</version>
+            <!-- 对springboot 2.x，最新兼容版本为1.8.1 -->
+            <!-- 对springboot 3.x，最新兼容版本为1.9.1 -->
+            <version>1.8.1</version>
         </dependency>
 
         <dependency>

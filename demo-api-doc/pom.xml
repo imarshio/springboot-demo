@@ -13,6 +13,7 @@
 
     <modules>
         <module>demo-swagger</module>
+        <module>demo-knife4j</module>
     </modules>
 
     <properties>

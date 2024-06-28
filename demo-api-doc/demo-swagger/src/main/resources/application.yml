@@ -4,7 +4,7 @@ server:
 
 spring:
   datasource:
-#    driver-class-name: com.mysql.cj.jdbc.Driver
+    # driver-class-name: com.mysql.cj.jdbc.Driver
     driver-class-name: com.p6spy.engine.spy.P6SpyDriver
     username: mybatis
     password: 3jq^edM#nW5J
@@ -39,23 +39,27 @@ mybatis-plus:
       # 数据库配置
       id-type: auto
 
-p6spy:
-  config:
-    logMessageFormat: com.baomidou.mybatisplus.extension.p6spy.P6SpyLogger
-    moduleList: com.baomidou.mybatisplus.extension.p6spy.MybatisPlusLogFactory,com.p6spy.engine.outage.P6OutageFactory
-    appender: com.p6spy.engine.spy.appender.Slf4JLogger
-    deregisterDrivers: true
-    usePrefix: true
-    excludeCategories: info,debug,result,commit,resultset
+#p6spy:
+#  config:
+#    logMessageFormat: com.baomidou.mybatisplus.extension.p6spy.P6SpyLogger
+#    moduleList: com.baomidou.mybatisplus.extension.p6spy.MybatisPlusLogFactory,com.p6spy.engine.outage.P6OutageFactory
+#    appender: com.p6spy.engine.spy.appender.Slf4JLogger
+#    deregisterDrivers: true
+#    usePrefix: true
+#    excludeCategories: info,debug,result,commit,resultset
+
+
 
 #decorator:
 #  datasource:
-#    p6spy:
-#      # 日志格式
-##      log-format: "\ntime:%(executionTime) || sql:%(sql)\n"
-#      # 自定义日志类
+#    datasource-proxy:
+#      query:
+#        log-level: debug
+#        enable-logging: true
 #      logging: slf4j
-##      custom-appender-class: com.example.testinit.config.StdoutLogger
+#    p6spy:
+#      enable-logging: true
+#      logging: slf4j
 
-#jackson:
-#  module:
+jackson:
+  module:

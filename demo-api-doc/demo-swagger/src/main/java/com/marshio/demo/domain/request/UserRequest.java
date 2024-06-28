@@ -20,5 +20,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class UserRequest extends User {
 
+    @ApiModelProperty("用户id列表")
     List<Integer> ids;
 }

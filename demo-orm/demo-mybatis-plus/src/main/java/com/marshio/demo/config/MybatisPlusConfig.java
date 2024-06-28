@@ -34,12 +34,7 @@ public class MybatisPlusConfig {
         // 添加乐观锁拦截器
         interceptor.addInnerInterceptor(new OptimisticLockerInnerInterceptor());
         // 权限控制
-        interceptor.addInnerInterceptor(new DataPermissionInterceptor());
+        // interceptor.addInnerInterceptor(new DataPermissionInterceptor());
         return interceptor;
     }
-
-    // @Bean
-    // public ConfigurationCustomizer configurationCustomizer() {
-    //     return configuration -> configuration.setUseGeneratedShortKey(true);
-    // }
 }

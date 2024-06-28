@@ -11,6 +11,7 @@ import com.marshio.demo.domain.vo.UserVO;
 import com.marshio.demo.service.IUserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +30,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @ApiOperation("根据id查询用户")
-    public Response<UserVO> getUserById(@PathVariable Integer id) {
+    public Response<UserVO> getUserById(@ApiParam(value = "用户id") @PathVariable Integer id) {
         return Response.success(UserConverter.INSTANCE.toVO(userService.getUserById(id)));
     }
 

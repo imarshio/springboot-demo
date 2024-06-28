@@ -1,6 +1,5 @@
 package com.marshio.demo;
 
-import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -10,9 +9,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @create 2024/6/7 17:47
  */
 
-@MapperScan({
-        "com.marshio.demo.mapper",
-})
+// @MapperScan({
+//         "com.marshio.demo.mapper",
+// })
 @SpringBootApplication
 public class MybatisPlusApplication {
 
