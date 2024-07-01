@@ -1,4 +1,4 @@
-package com.marshio.demo.domain.request;
+package com.marshio.demo.domain.rest;
 
 
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
@@ -15,10 +15,7 @@ import java.util.List;
 @Data
 public class PageRequest<T> {
 
-    private Integer pageNo = 1;
-    private Integer pageSize = 10;
-    private Integer maxPageSize = 100;
-    private Long total;
+    private PageInfo page;
 
     private List<OrderItem> orders = new ArrayList<>();
     private T query;

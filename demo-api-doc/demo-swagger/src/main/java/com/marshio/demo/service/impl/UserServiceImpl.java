@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.marshio.demo.domain.entity.User;
-import com.marshio.demo.domain.request.PageRequest;
+import com.marshio.demo.domain.rest.PageRequest;
 import com.marshio.demo.domain.request.UserRequest;
 import com.marshio.demo.mapper.UserMapper;
 import com.marshio.demo.service.IUserService;

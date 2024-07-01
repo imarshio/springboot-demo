@@ -15,6 +15,7 @@
         <module>demo-mybatis-plus</module>
         <module>demo-jdbc-template</module>
         <module>demo-jdbc</module>
+        <module>demo-dynamic-datasource</module>
     </modules>
 
     <packaging>pom</packaging>

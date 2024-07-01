@@ -97,6 +97,103 @@ public class Doc {
 ### 服务层
 
 ```java
+@Slf4j
+@RequiredArgsConstructor
+public class BaseEsService<T, TD> {
+
+    // 以下代码存在个人使用习惯的差异，请酌情参考
+    // TODO 疑问：elasticsearchRepository 与 restHighLevelClient 的区别是什么？
+
+    protected final ElasticsearchRepository<T, TD> elasticsearchRepository;
+    protected final RestHighLevelClient restHighLevelClient;
+    protected final ElasticsearchProperties properties;
+
+
+    @PostConstruct
+    public void init() {
+        log.info("elasticsearch init nodes is " + Arrays.toString(
+                restHighLevelClient.getLowLevelClient().getNodes().toArray()));
+    }
+
+    /**
+     * 新增或更新实体
+     * 当实体id在索引命名空间下不存在时会新增
+     * 当实体id在索引命名空间下存在时会更新
+     *
+     * @param entity 实体
+     * @return 保存的实体
+     */
+    public T save(T entity) {
+        return elasticsearchRepository.save(entity);
+    }
+
+    /**
+     * 批量保存实体
+     *
+     * @param entities 实体
+     * @return 保存的实体集合
+     */
+    public Iterable<T> saveAll(Iterable<T> entities) {
+        return elasticsearchRepository.saveAll(entities);
+    }
+
+    public T update(T entity) {
+        return this.save(entity);
+    }
+
+    public SearchResponse search(SearchRequest searchRequest) throws IOException {
+        return this.search(searchRequest, RequestOptions.DEFAULT);
+    }
+
+    public SearchResponse search(SearchRequest searchRequest, RequestOptions options) throws IOException {
+        return restHighLevelClient.search(searchRequest, options);
+    }
+
+
+    /**
+     * 删除实体
+     *
+     * @param id 实体id
+     */
+    public void delete(TD id) {
+        elasticsearchRepository.deleteById(id);
+    }
+}
+
+```
+
+```java
+@Service
+public class DocEsService extends BaseEsService<Doc, String> {
+
+    public DocEsService(ElasticsearchRepository<Doc, String> elasticsearchRepository,
+                        RestHighLevelClient restHighLevelClient,
+                        ElasticsearchProperties properties) {
+        super(elasticsearchRepository, restHighLevelClient, properties);
+    }
+
+    public Page<Doc> search(DocQueryRequest query, PageRequest pageRequest) throws IOException {
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        queryBuilder.must(QueryBuilders.matchQuery(Doc.Fields.globalId, query.getGlobalId()));
+
+        SearchSourceBuilder searchSourceBuilder = SearchSourceBuilder.searchSource().query(queryBuilder);
+        searchSourceBuilder.from(pageRequest.getPageNumber()).size(pageRequest.getPageSize());
+
+        SearchRequest searchRequest = new SearchRequest(properties.getIndexName()).source(searchSourceBuilder);
+        SearchResponse response = this.search(searchRequest);
+        long total = response.getHits().getTotalHits().value;
+        SearchHit[] hits = response.getHits().getHits();
+        List<Doc> list = new ArrayList<>();
+        for (SearchHit hit : hits) {
+            // 转成实体类即可
+            hit.getSourceAsString();
+            Doc doc = JSONUtil.toBean(hit.getSourceAsString(), Doc.class);
+            list.add(doc);
+        }
+
+        return new PageImpl<>(list, pageRequest, total);
+    }
+}
 
 ```
 
@@ -104,7 +201,7 @@ public class Doc {
 
 ### ElasticsearchRepository 与 RestHighLevelClient 的区别是什么？
 
-### TermQuery与MatchQuery的区别
+### TermQuery 与 MatchQuery 的区别
 
 TermQuery
 

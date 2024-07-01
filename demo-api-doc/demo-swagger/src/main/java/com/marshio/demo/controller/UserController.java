@@ -3,7 +3,7 @@ package com.marshio.demo.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.marshio.demo.converter.UserConverter;
-import com.marshio.demo.domain.request.PageRequest;
+import com.marshio.demo.domain.rest.PageRequest;
 import com.marshio.demo.domain.request.UserRequest;
 import com.marshio.demo.domain.rest.PageResponse;
 import com.marshio.demo.domain.rest.Response;
