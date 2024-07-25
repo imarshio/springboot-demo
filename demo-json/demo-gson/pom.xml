@@ -5,22 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.marshio.demo</groupId>
-        <artifactId>springboot-demo</artifactId>
+        <artifactId>demo-json</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>demo-spring-framework</artifactId>
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>demo-spel</module>
-        <module>demo-aop</module>
-        <module>demo-ioc</module>
-        <module>demo-boot-process</module>
-        <module>demo-filter</module>
-        <module>demo-interceptor</module>
-        <module>demo-security</module>
-    </modules>
+    <artifactId>demo-gson</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

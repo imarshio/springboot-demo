@@ -14,6 +14,9 @@
     <modules>
         <module>demo-json-path</module>
         <module>demo-json-schema</module>
+        <module>demo-jackson</module>
+        <module>demo-fastjson2</module>
+        <module>demo-gson</module>
     </modules>
 
     <properties>

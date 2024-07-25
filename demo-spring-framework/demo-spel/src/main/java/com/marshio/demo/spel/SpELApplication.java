@@ -4,7 +4,6 @@ package com.marshio.demo.spel;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +24,7 @@ public class SpELApplication {
         List<Map<String, Object>> list = new ArrayList<>();
         list.add(map);
 
-        EvaluationContext context = new StandardEvaluationContext();
+        EvaluationContext context = SpELUtil.createStandardEvaluationContext();
         context.setVariable("input", list);
 
         System.out.println(parser.parseExpression(" #input[1]['title']").getValue(context));
