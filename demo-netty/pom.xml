@@ -9,16 +9,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>demo-spring-framework</artifactId>
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>demo-spel</module>
-        <module>demo-aop</module>
-        <module>demo-ioc</module>
-        <module>demo-filter</module>
-        <module>demo-interceptor</module>
-    </modules>
+    <artifactId>demo-netty</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

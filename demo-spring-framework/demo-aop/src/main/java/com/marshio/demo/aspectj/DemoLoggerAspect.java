@@ -1,6 +1,10 @@
 package com.marshio.demo.aspectj;
 
+import com.marshio.demo.domain.entity.User;
+import com.marshio.demo.service.IUserService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.springframework.stereotype.Component;
 
@@ -13,13 +17,21 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class DemoLoggerAspect {
+
+    private final IUserService service;
 
     // @Pointcut() 声明一个切面，声明的方法返回必须为空
     // https://docs.spring.io/spring-framework/reference/core/aop/ataspectj/pointcuts.html
 
     @Pointcut("@annotation(com.marshio.demo.annotation.DemoAnnotation)")
     public void logAdvice() {
+        // 切面方法应该为空
+    }
+
+    @Pointcut("execution(public * com.marshio.demo.service.IUserService.update(..) )")
+    public void logAdvice2() {
         // 切面方法应该为空
     }
 
@@ -46,5 +58,22 @@ public class DemoLoggerAspect {
     public void after() {
         // 执行切面方法之后需要执行的  == finally块
         log.info("3、执行切面方法之后...");
+    }
+
+    @Around(value = "logAdvice2()")
+    public Object saveLog(ProceedingJoinPoint pjp) throws Throwable {
+        // 项目生产配置
+        Object[] args = pjp.getArgs();
+        Object result;
+        try {
+            result = pjp.proceed(args);
+            service.save((User) args[0]);
+        } catch (Throwable t) {
+            log.error("LogAspect saveLog error {}", t.getMessage(), t);
+            throw t;
+        } finally {
+            // do nothing
+        }
+        return result;
     }
 }

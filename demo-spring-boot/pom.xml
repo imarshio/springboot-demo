@@ -9,21 +9,30 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>demo-spring-framework</artifactId>
+    <artifactId>demo-spring-boot</artifactId>
+
     <packaging>pom</packaging>
 
     <modules>
-        <module>demo-spel</module>
-        <module>demo-aop</module>
-        <module>demo-ioc</module>
-        <module>demo-filter</module>
-        <module>demo-interceptor</module>
+        <module>demo-security</module>
+        <module>demo-boot-process</module>
     </modules>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring.security.jwt.version>1.1.1.RELEASE</spring.security.jwt.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-jwt</artifactId>
+                <version>${spring.security.jwt.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 </project>

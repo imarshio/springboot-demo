@@ -27,7 +27,9 @@ public class DemoStopWatchAspect {
 
     @Around("stopWatchAdvice()")
     public Object before(ProceedingJoinPoint point) {
+        point.getArgs();
         MethodSignature signature = (MethodSignature) point.getSignature();
+
         StopWatch stopWatch = signature.getMethod().getAnnotation(StopWatch.class);
         Object result;
         try {

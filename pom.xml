@@ -13,9 +13,12 @@
         <module>demo-orm</module>
         <module>demo-api-doc</module>
         <module>demo-json</module>
-        <module>demo-spring-framework</module>
         <module>demo-elasticsearch</module>
         <module>demo-tool</module>
+        <module>demo-netty</module>
+        <module>demo-spring-framework</module>
+        <module>demo-spring-boot</module>
+        <module>demo-spring-cloud</module>
     </modules>
 
     <parent>

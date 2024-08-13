@@ -1,0 +1,17 @@
+package com.marshio.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/**
+ * @author marshio
+ * @desc ...
+ * @create 2024/8/12 17:26
+ */
+@SpringBootApplication
+public class SpringCloudGatewayApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SpringCloudGatewayApplication.class, args);
+    }
+}
