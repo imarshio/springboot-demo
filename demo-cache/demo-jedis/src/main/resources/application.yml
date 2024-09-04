@@ -1,0 +1,16 @@
+server:
+  port: 8888
+  servlet:
+    context-path: /demo/caffeine
+spring:
+  cache:
+    type: caffeine
+    caffeine:
+      spec: initialCapacity=10,maximumSize=200,expireAfterWrite=5m
+
+app:
+  caffeine:
+    ttl: 30
+    initCapacity: 10
+    maximumSize: 200
+    spec: initialCapacity=10,maximumSize=100,expireAfterWrite=30m

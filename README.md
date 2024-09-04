@@ -4,6 +4,12 @@
 
 spring提供了[全局搜索](https://docs.spring.io/spring-boot/search.html)，如果你找不到的话，还是需要费一番功夫才能找到呢
 
+## 环境
+
+- spring boot version：2.3.8.RELEASE
+- spring cloud version：Hoxton.SR10
+- spring cloud alibaba version：2.2.3.RELEASE
+
 # Spring AOP
 
 # Spring IoC

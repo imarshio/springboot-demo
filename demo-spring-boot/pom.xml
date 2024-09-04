@@ -16,6 +16,8 @@
     <modules>
         <module>demo-security</module>
         <module>demo-boot-process</module>
+        <module>demo-spring-boot-starter</module>
+        <module>demo-spring-boot-autoconfigure</module>
     </modules>
 
     <properties>

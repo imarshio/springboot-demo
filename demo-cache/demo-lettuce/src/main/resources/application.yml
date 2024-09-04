@@ -1,0 +1,12 @@
+server:
+  port: 8888
+  servlet:
+    context-path: /demo/caffeine
+spring:
+  redis:
+    host: 127.0.0.1   #redis服务端主机ip
+    port: 6379   #redis端口号
+    # password: 123456   #redis密码
+    database: 0   #使用redis的哪个库，redis有16个库，默认是0即第一个库
+    client-name: redis-client-lettuce    #生成的客户端实例名称(lettuce连接的名称)
+    connection-timeout: 3000   #连接redis超时时间
