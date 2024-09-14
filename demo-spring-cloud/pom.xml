@@ -21,6 +21,7 @@
 
     <modules>
         <module>demo-gateway</module>
+        <module>demo-cloud-kafka</module>
     </modules>
 
     <!-- <dependencyManagement> -->
