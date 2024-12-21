@@ -77,11 +77,61 @@ Consider defining a bean of type 'org.springframework.http.codec.ServerCodecConf
 
 ### Filter
 
+#### 启用访问日志
+
+通过添加启动参数`-Dreactor.netty.http.server.accessLogEnable=true`来启用访问日志。
+
+输出示例
+
+```java
+```
 
 
-```yaml
+
+#### 自定义全局过滤器
+
+```java
+package com.marshio.demo.filter;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+
+@Component
+@Slf4j
+public class LogFilter implements GlobalFilter {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        log.info("Global filtering");
+        return chain.filter(exchange);
+    }
+}
 
 ```
+
+#### 跨域配置
+
+##### 通过YAML
+
+[官网地址](https://docs.spring.io/spring-cloud-gateway/reference/spring-cloud-gateway/cors-configuration.html)
+
+```yam
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: '*'
+            allowedMethods:
+            - GET
+```
+
+
 
 ### Route
 
@@ -105,3 +155,91 @@ spring:
 ```
 
 > 一个程序启动两个副本，可以通过 `-Dserver.port=18080` 来指定不同的端口。
+
+### Predicates
+
+断言器
+
+#### 自定义路由断言工厂
+
+```java
+package com.marshio.demo.factory;
+
+import lombok.Data;
+import org.springframework.cloud.gateway.handler.predicate.AbstractRoutePredicateFactory;
+import org.springframework.cloud.gateway.handler.predicate.GatewayPredicate;
+import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.server.ServerWebExchange;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
+
+@Component
+public class AuthCheckRoutePredicateFactory extends AbstractRoutePredicateFactory<AuthCheckRoutePredicateFactory.Config> {
+
+    public static final String PARAM_KEY = "param";
+
+    public static final String REGEXP_KEY = "regexp";
+
+    public AuthCheckRoutePredicateFactory() {
+        super(Config.class);
+    }
+
+    @Override
+    public List<String> shortcutFieldOrder() {
+        return Arrays.asList(PARAM_KEY, REGEXP_KEY);
+    }
+
+    @Override
+    public Predicate<ServerWebExchange> apply(Config config) {
+        return (GatewayPredicate) serverWebExchange -> {
+            if (config.getName().equals(PARAM_KEY)) {
+                return true;
+            }
+            return false;
+        };
+    }
+
+    @Validated
+    @Data
+    public static class Config {
+        private String name;
+    }
+}
+
+```
+
+## 整合sentinel
+
+### 添加依赖
+
+```pom
+        <!-- SpringCloud Alibaba Sentinel -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+
+        <!-- SpringCloud Alibaba Sentinel Gateway -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
+        </dependency>
+```
+
+
+
+### 配置
+
+> 注：在springcloud 2.1.6 之前，是需要注册一些 config bean才能正常使用，新依赖中由`com.alibaba.cloud.sentinel.gateway.scg.SentinelSCGAutoConfiguration`这个类帮我们完成了这个功能。
+
+```yaml
+    sentinel:
+      transport:
+        dashboard: localhost:8858
+```
+
+
+

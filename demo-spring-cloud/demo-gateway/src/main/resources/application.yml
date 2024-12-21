@@ -40,6 +40,14 @@ spring:
           uri: "http://127.0.0.1:18081"
           predicates:
             - Path=/v2/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: '*'
+            allowedMethods: '*'
+    sentinel:
+      transport:
+        dashboard: localhost:8858
 mybatis-plus:
   configuration:
     # MyBatis 配置
