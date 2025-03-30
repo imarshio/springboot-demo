@@ -17,6 +17,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring-cloud-bootstrap.version>4.0.0</spring-cloud-bootstrap.version>
     </properties>
 
     <modules>
@@ -24,25 +25,28 @@
         <module>demo-cloud-kafka</module>
     </modules>
 
-    <!-- <dependencyManagement> -->
-    <!--     <dependencies> -->
-    <!--         &lt;!&ndash; https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-dependencies &ndash;&gt; -->
-    <!--         <dependency> -->
-    <!--             <groupId>org.springframework.cloud</groupId> -->
-    <!--             <artifactId>spring-cloud-dependencies</artifactId> -->
-    <!--             <version>2023.0.3</version> -->
-    <!--             <type>pom</type> -->
-    <!--             <scope>import</scope> -->
-    <!--         </dependency> -->
-
-    <!--     </dependencies> -->
-    <!-- </dependencyManagement> -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-bootstrap</artifactId>
+                <version>${spring-cloud-bootstrap.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
+
+        <!-- spring-boot-starter-web 和 spring-cloud-starter-gateway 有绝对冲突，gateway使用的webflux框架，web使用的是MVC框架，所以二者不能同时存在 -->
+        <!-- <dependency> -->
+        <!--     <groupId>org.springframework.boot</groupId> -->
+        <!--     <artifactId>spring-boot-starter-web</artifactId> -->
+        <!-- </dependency> -->
 
         <dependency>
             <groupId>mysql</groupId>

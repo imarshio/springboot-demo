@@ -19,6 +19,9 @@
         <module>demo-spring-framework</module>
         <module>demo-spring-boot</module>
         <module>demo-spring-cloud</module>
+        <module>demo-spring-boot/demo-nacos-discovery</module>
+        <module>demo-spring-cloud/demo-cloud-nacos-config</module>
+        <module>demo-spring-cloud/demo-cloud-nacos-discovery</module>
     </modules>
 
     <parent>

@@ -1,8 +1,7 @@
-
-
 server:
   port: 18080
-  content-path: /api
+  servlet:
+    context-path: /gateway
 
 spring:
   datasource:
