@@ -13,11 +13,8 @@
     <packaging>pom</packaging>
     <modules>
         <module>demo-caffeine</module>
-        <module>demo-jedis</module>
-        <module>demo-lettuce</module>
-        <module>demo-redisson</module>
         <module>demo-spring-cache-annotations</module>
-        <module>demo-jetcache</module>
+        <module>demo-redis</module>
     </modules>
 
     <properties>

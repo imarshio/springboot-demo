@@ -23,6 +23,7 @@
     <modules>
         <module>demo-gateway</module>
         <module>demo-cloud-kafka</module>
+        <module>demo-cloud-nacos</module>
     </modules>
 
     <dependencyManagement>

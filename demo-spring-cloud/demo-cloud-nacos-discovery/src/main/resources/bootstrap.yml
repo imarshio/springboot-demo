@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: demo
+  profiles:
+    active: dev
+  cloud:
+    config:
+      # 本地配置优先级最高
+      override-none: false
+    nacos:
+      discovery:
+        enabled: true
+        server-addr: 47.251.85.170:8848
+        namespace: public
+        username: nacos
+        password: Dy0S1#p1
+
+
