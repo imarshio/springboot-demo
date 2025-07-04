@@ -31,13 +31,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     public Page<User> getUsers(PageRequest<UserRequest> request) {
 
         // page.getTotal()
-        Page<User> page = new Page<>(request.getPageNo(), request.getPageSize());
+        Page<User> page = new Page<>(request.getPage().getPageNo(), request.getPage().getPageSize());
 
-        if (null != request.getTotal()) {
+        if (null != request.getPage().getTotal()) {
             // 如已存在总数，则无需查询总数，减轻数据库压力
             // 此总数可以通过其他方式获取，如存在缓存，则直接从缓存中获取
             // 注：需要考虑具体的场景，什么时候前端可以传总数，什么情况不可以传
-            page.setTotal(request.getTotal());
+            page.setTotal(request.getPage().getTotal());
             page.setSearchCount(false);
         }
         page.setOrders(request.getOrders());

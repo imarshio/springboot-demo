@@ -16,6 +16,8 @@
         <module>demo-jetcache</module>
     </modules>
 
+    <packaging>pom</packaging>
+
     <artifactId>demo-redis</artifactId>
 
     <properties>

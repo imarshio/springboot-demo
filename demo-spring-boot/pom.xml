@@ -17,9 +17,9 @@
         <module>demo-security</module>
         <module>demo-nacos-config</module>
         <module>demo-boot-process</module>
-        <module>demo-spring-boot-starter</module>
-        <module>demo-spring-boot-autoconfigure</module>
         <module>demo-kafka</module>
+        <module>demo-spring-boot-starter</module>
+        <module>demo-spring-boot-starter-test</module>
     </modules>
 
     <properties>
